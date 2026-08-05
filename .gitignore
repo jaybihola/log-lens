@@ -1,0 +1,28 @@
+local/*
+
+# dependencies
+node_modules/
+
+# build output
+client/dist/
+client/build/
+
+# real, operator-specific config — never commit staging/prod URLs, indices, or
+# credentials. Only the *.example.json / *.env.example templates are tracked.
+server/.env
+server/log-lens.settings.json
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# local Claude settings
+.claude/settings.local.json

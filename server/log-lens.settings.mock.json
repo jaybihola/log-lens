@@ -1,0 +1,24 @@
+{
+  "environments": [
+    {
+      "name": "mock",
+      "url": "http://localhost:9201/_msearch?pretty",
+      "indices": [
+        {
+          "pattern": "logs-app-*",
+          "foldFilters": [
+            { "key": "type", "label": "Type", "path": "event.type" },
+            { "key": "status", "label": "Status", "path": "event.status" }
+          ]
+        },
+        {
+          "pattern": "logs-worker-*",
+          "foldFilters": [
+            { "key": "name", "label": "Job name", "path": "job.name" },
+            { "key": "status", "label": "Status", "path": "job.status" }
+          ]
+        }
+      ]
+    }
+  ]
+}

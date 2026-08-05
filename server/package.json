@@ -1,0 +1,25 @@
+{
+  "name": "@log-lens/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Log-lens backend: tails log files and serves live updates over SSE, plus an optional remote (Elasticsearch/OpenSearch-shaped) query backend.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "mock:writer": "node mocks/mock-log-writer.js",
+    "mock:es": "node mocks/mock-es-server.js"
+  },
+  "dependencies": {
+    "fastify": "^5.1.0",
+    "@fastify/cors": "^10.0.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=18.11"
+  }
+}

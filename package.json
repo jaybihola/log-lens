@@ -1,0 +1,24 @@
+{
+  "name": "log-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Live log viewer: tails log files and streams them to a browser with an instant client-side filter language.",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "mock:writer": "npm run mock:writer -w server",
+    "mock:es": "npm run mock:es -w server",
+    "build": "npm run build -w client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=18.11"
+  }
+}
