@@ -1,0 +1,128 @@
+:root {
+  color-scheme: dark;
+}
+
+/* Default (dark) — also the explicit dark override so a manual toggle wins
+   over the OS preference below. */
+:root, :root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #17171a;
+  --panel: #1c1c20;
+  --panel-2: #232328;
+  --panel-3: #2a2a30;
+  --panel-sunken: #18181b;
+  --border: #302f36;
+  --border-strong: #403f47;
+  --fg: #e7e7ea;
+  --dim: #97969f;
+  --dimmer: #6c6b73;
+
+  --accent: #6c9df5;
+  --accent-rgb: 108, 157, 245;
+
+  --error: #e0787b;
+  --error-rgb: 224, 120, 123;
+  --warn: #d3a25f;
+  --warn-rgb: 211, 162, 95;
+  --info: #6fb3a8;
+  --info-rgb: 111, 179, 168;
+  --debug: #8a9e7a;
+  --debug-rgb: 138, 158, 122;
+
+  --match: rgba(var(--accent-rgb), 0.35);
+  --flash: #4a4420;
+
+  --syntax-key: #7cc7bb;
+  --syntax-string: #cf9c7c;
+  --syntax-number: #b2c98f;
+  --syntax-bool: #b696d6;
+  --syntax-punct: #86858e;
+  --syntax-tag: #7aa8d8;
+  --syntax-attr: #9fc0e0;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f6f6f7;
+  --panel: #ffffff;
+  --panel-2: #f1f1f3;
+  --panel-3: #e7e7ea;
+  --panel-sunken: #eeeef0;
+  --border: #e1e1e5;
+  --border-strong: #cbcbd1;
+  --fg: #1c1c1f;
+  --dim: #6c6c74;
+  --dimmer: #9c9ba3;
+
+  --accent: #3568d4;
+  --accent-rgb: 53, 104, 212;
+
+  --error: #c2464a;
+  --error-rgb: 194, 70, 74;
+  --warn: #a06a24;
+  --warn-rgb: 160, 106, 36;
+  --info: #2f7d70;
+  --info-rgb: 47, 125, 112;
+  --debug: #5c7a49;
+  --debug-rgb: 92, 122, 73;
+
+  --match: rgba(var(--accent-rgb), 0.28);
+  --flash: #fbf0b8;
+
+  --syntax-key: #0e7c6b;
+  --syntax-string: #9a5a2c;
+  --syntax-number: #4c7a2e;
+  --syntax-bool: #7d3fa3;
+  --syntax-punct: #7c7b84;
+  --syntax-tag: #1d5fa8;
+  --syntax-attr: #2f6690;
+
+  --shadow: 0 10px 30px rgba(20, 20, 30, 0.12);
+  --overlay: rgba(20, 20, 25, 0.3);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+button {
+  background: var(--panel-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 11px;
+  font-size: 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button.active { background: rgba(var(--accent-rgb), 0.16); border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+input[type="text"], input[type="password"], input[type="datetime-local"], select {
+  background: var(--panel-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  min-width: 0; /* flex items default to a non-zero min-width and refuse to shrink otherwise */
+}
+input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+}

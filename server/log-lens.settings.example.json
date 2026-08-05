@@ -1,0 +1,30 @@
+{
+  "environments": [
+    {
+      "name": "staging",
+      "url": "https://example.com/es-staging/_msearch?pretty",
+      "indices": [
+        {
+          "pattern": "my-logs-*",
+          "foldFilters": [
+            { "key": "type", "label": "Type", "path": "some.json.path.Type", "presetValues": ["Fetch", "Create"] },
+            { "key": "status", "label": "Status", "path": "some.json.path.Status", "presetValues": ["Started", "Completed", "Failed"] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "production",
+      "url": "https://example.com/es-production/_msearch?pretty",
+      "indices": [
+        {
+          "pattern": "my-logs-*",
+          "foldFilters": [
+            { "key": "type", "label": "Type", "path": "some.json.path.Type", "presetValues": ["Fetch", "Create"] },
+            { "key": "status", "label": "Status", "path": "some.json.path.Status", "presetValues": ["Started", "Completed", "Failed"] }
+          ]
+        }
+      ]
+    }
+  ]
+}
