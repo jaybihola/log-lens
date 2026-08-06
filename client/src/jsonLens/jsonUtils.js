@@ -199,3 +199,39 @@ export function filterJsonByFields(text, fieldNames, { indent = 2 } = {}) {
   }
   return { ok: true, error: null, resultText: JSON.stringify(pruned, null, indent === 'tab' ? '\t' : indent), matched: true };
 }
+
+// ---- table view helpers (pure, no React) — used by JsonTableView.jsx ----
+
+// The six buckets the table view cares about — finer-grained than typeof
+// (splits array from object, null from object) since each renders/labels
+// differently.
+export function getJsonValueType(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value; // 'object' | 'string' | 'number' | 'boolean' | 'undefined'
+}
+
+// A one-line summary for a collapsed object/array row's value column —
+// mirrors what most JSON tree tables (Kibana included) show before you
+// expand: a count, not the actual nested content.
+export function jsonValuePreview(value) {
+  const type = getJsonValueType(value);
+  if (type === 'array') return value.length === 1 ? '[1 item]' : `[${value.length} items]`;
+  if (type === 'object') {
+    const n = Object.keys(value).length;
+    return n === 1 ? '{1 key}' : `{${n} keys}`;
+  }
+  return String(value);
+}
+
+// Parses `text` for the table view; distinct from validateJson/locateJsonError
+// (which serve the toolbar status text / editor lint gutter respectively) —
+// this one just needs a boolean + the parsed value or an error message.
+export function parseJsonForTable(text) {
+  if (!text.trim()) return { ok: true, value: undefined };
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}

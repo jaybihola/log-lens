@@ -3,6 +3,7 @@ import {
   AlignLeft, Minimize2, ArrowDownAZ, WrapText, Copy, Check, Download, Upload, Trash2, Plus,
   Save, SaveAll, PanelLeft, Undo2, Redo2, Search, FoldVertical, UnfoldVertical, Hash,
   ZoomIn, ZoomOut, ChevronsLeftRight, ChevronsRightLeft, Braces, FileJson, FolderPlus, FileClock,
+  Pencil, Eye, Code2, Table2,
 } from 'lucide-react';
 import { useJsonTabs, isTabDirty } from './hooks/useJsonTabs.js';
 import { useJsonFileSystem } from './hooks/useJsonFileSystem.js';
@@ -11,6 +12,7 @@ import { useContextMenu } from '../shared/hooks/useContextMenu.js';
 import { jsonLensApi } from './api/jsonLensClient.js';
 import { JsonTabBar } from './components/JsonTabBar.jsx';
 import { JsonFileSidebar } from './components/JsonFileSidebar.jsx';
+import { JsonTableView } from './components/JsonTableView.jsx';
 import { JsonEditor } from '../shared/components/JsonEditor.jsx';
 import { ContextMenu } from '../shared/components/ContextMenu.jsx';
 import { ConfirmModal } from '../shared/components/ConfirmModal.jsx';
@@ -82,6 +84,18 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
   }, [fontSize]);
   const stepFontSize = (delta) => setFontSize((v) => Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round((v + delta) * 10) / 10)));
 
+  // Edit vs. View is a real mode boundary, not just a side effect of field
+  // selection — kept per tab (so switching tabs restores whichever mode you
+  // left it in) but intentionally not persisted anywhere beyond this
+  // component's lifetime, unlike `selectedFields`/`content` which live on
+  // the tab itself. `viewSubMode` (which read-only rendering to use) is a
+  // plain toolbar preference, same tier as `wrap`/`sortKeys` below.
+  const [modeByTab, setModeByTab] = useState({});
+  const mode = (activeTab && modeByTab[activeTab.id]) || 'edit';
+  const setMode = (m) => activeTab && setModeByTab((prev) => ({ ...prev, [activeTab.id]: m }));
+  const [viewSubMode, setViewSubMode] = useState('code'); // 'code' | 'table'
+  const isViewMode = mode === 'view';
+
   // Field filter: a search box (fuzzy, only applied on Enter) that finds
   // candidate field names, which then get added to `selectedFields` — the
   // exact set actually driving what's shown. Ambiguous searches (more than
@@ -100,16 +114,23 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
   const selectedFields = activeTab?.selectedFields || [];
   const validation = useMemo(() => validateJson(content), [content]);
 
+  // Field-filtering only ever applies in View mode — in Edit mode the tab's
+  // `selectedFields` (if any survive from a previous View-mode session)
+  // are simply ignored, so Edit mode always shows the real, full, editable
+  // content with no filter UI in the way.
   const filterResult = useMemo(
-    () => (selectedFields.length ? filterJsonByFields(content, selectedFields, { indent }) : null),
-    [content, selectedFields, indent],
+    () => (isViewMode && selectedFields.length ? filterJsonByFields(content, selectedFields, { indent }) : null),
+    [isViewMode, content, selectedFields, indent],
   );
-  // Only actually swap the editor to the filtered (read-only) view once we
-  // have a real match — an invalid-JSON or no-match state falls back to
-  // showing (and still letting you edit) the real content, with a status
-  // message explaining why the filter isn't doing anything right now.
+  // Only actually swap to the filtered text once we have a real match — an
+  // invalid-JSON or no-match state falls back to showing the real content,
+  // with a status message explaining why the filter isn't doing anything.
   const isFiltering = !!filterResult?.ok && filterResult.matched;
   const displayedText = isFiltering ? filterResult.resultText : content;
+  // View mode is read-only regardless of whether a field filter is active —
+  // that's the whole point of the mode boundary (previously this was purely
+  // a side effect of `isFiltering`).
+  const isReadOnly = isViewMode;
   const dirty = activeTab ? isTabDirty(activeTab) : false;
 
   const addFields = (names) => {
@@ -437,22 +458,58 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
           ) : (
             <>
           <div className="json-toolbar">
-            <Tooltip label="Save" description={activeTab?.origin === 'new' ? 'Choose where to save this tab.' : 'Write this tab back to where it came from.'}>
-              <button type="button" className="icon-btn" onClick={() => activeTab && saveTab(activeTab)} disabled={!activeTab || !dirty}>
-                <Save size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Save as…" description="Save this tab's content to a new file on disk.">
-              <button type="button" className="icon-btn" onClick={() => activeTab && setDialog({ type: 'save-as', tab: activeTab })} disabled={!activeTab || !content.trim()}>
-                <SaveAll size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Import file…" description="Load a .json file into this tab.">
-              <button type="button" className="icon-btn" onClick={() => fileInputRef.current?.click()}>
-                <Upload size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <input ref={fileInputRef} type="file" accept=".json,application/json,text/plain" style={{ display: 'none' }} onChange={handleFilePicked} />
+            <div className="json-mode-toggle">
+              <Tooltip label="Edit" description="Edit the raw JSON — the field filter is hidden here so nothing gets in the way.">
+                <button type="button" className={mode === 'edit' ? 'active icon-btn' : 'icon-btn'} onClick={() => setMode('edit')} disabled={!activeTab}>
+                  <Pencil size={15} strokeWidth={1.75} />
+                  <span className="json-mode-toggle-label">Edit</span>
+                </button>
+              </Tooltip>
+              <Tooltip label="View" description="Read-only viewing, with field-filtering available.">
+                <button type="button" className={isViewMode ? 'active icon-btn' : 'icon-btn'} onClick={() => setMode('view')} disabled={!activeTab}>
+                  <Eye size={15} strokeWidth={1.75} />
+                  <span className="json-mode-toggle-label">View</span>
+                </button>
+              </Tooltip>
+            </div>
+
+            {isViewMode && (
+              <div className="json-mode-toggle">
+                <Tooltip label="Code view" description="Read-only syntax-highlighted text.">
+                  <button type="button" className={viewSubMode === 'code' ? 'active icon-btn' : 'icon-btn'} onClick={() => setViewSubMode('code')}>
+                    <Code2 size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Table view" description="Nested objects/arrays as an expandable table.">
+                  <button type="button" className={viewSubMode === 'table' ? 'active icon-btn' : 'icon-btn'} onClick={() => setViewSubMode('table')}>
+                    <Table2 size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+              </div>
+            )}
+
+            <span className="json-toolbar-divider" />
+
+            {mode === 'edit' && (
+              <>
+                <Tooltip label="Save" description={activeTab?.origin === 'new' ? 'Choose where to save this tab.' : 'Write this tab back to where it came from.'}>
+                  <button type="button" className="icon-btn" onClick={() => activeTab && saveTab(activeTab)} disabled={!activeTab || !dirty}>
+                    <Save size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Save as…" description="Save this tab's content to a new file on disk.">
+                  <button type="button" className="icon-btn" onClick={() => activeTab && setDialog({ type: 'save-as', tab: activeTab })} disabled={!activeTab || !content.trim()}>
+                    <SaveAll size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Import file…" description="Load a .json file into this tab.">
+                  <button type="button" className="icon-btn" onClick={() => fileInputRef.current?.click()}>
+                    <Upload size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <input ref={fileInputRef} type="file" accept=".json,application/json,text/plain" style={{ display: 'none' }} onChange={handleFilePicked} />
+              </>
+            )}
             <Tooltip label="Download" description="Save what's currently shown as a .json file.">
               <button type="button" className="icon-btn" onClick={download} disabled={!displayedText.trim()}>
                 <Download size={15} strokeWidth={1.75} />
@@ -461,82 +518,90 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
 
             <span className="json-toolbar-divider" />
 
-            <Tooltip label="Undo" description="Undo the last edit.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.undo()} disabled={!activeTab || isFiltering}>
-                <Undo2 size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Redo" description="Redo the last undone edit.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.redo()} disabled={!activeTab || isFiltering}>
-                <Redo2 size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
+            {mode === 'edit' && (
+              <>
+                <Tooltip label="Undo" description="Undo the last edit.">
+                  <button type="button" className="icon-btn" onClick={() => editorRef.current?.undo()} disabled={!activeTab}>
+                    <Undo2 size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Redo" description="Redo the last undone edit.">
+                  <button type="button" className="icon-btn" onClick={() => editorRef.current?.redo()} disabled={!activeTab}>
+                    <Redo2 size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+              </>
+            )}
             <Tooltip label="Find / Replace" description="Open the editor's search panel.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.find()} disabled={!activeTab}>
+              <button type="button" className="icon-btn" onClick={() => editorRef.current?.find()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
                 <Search size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
             <Tooltip label="Go to line…" description="Jump the cursor to a specific line number.">
-              <button type="button" className="icon-btn" onClick={requestGotoLine} disabled={!activeTab}>
+              <button type="button" className="icon-btn" onClick={requestGotoLine} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
                 <Hash size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
 
-            <span className="json-toolbar-divider" />
+            {mode === 'edit' && (
+              <>
+                <span className="json-toolbar-divider" />
 
-            <Tooltip label="Format" description="Pretty-print with the selected indent.">
-              <button type="button" className="icon-btn" onClick={format} disabled={!content.trim() || !validation.valid || isFiltering}>
-                <AlignLeft size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Minify" description="Collapse to a single line.">
-              <button type="button" className="icon-btn" onClick={minify} disabled={!content.trim() || !validation.valid || isFiltering}>
-                <Minimize2 size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Sort keys" description="Alphabetize object keys when formatting or minifying.">
-              <button type="button" className={sortKeys ? 'active icon-btn' : 'icon-btn'} onClick={() => setSortKeys((v) => !v)} disabled={isFiltering}>
-                <ArrowDownAZ size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Escape" description="Wrap the current content as a JSON string literal, for embedding it as a value elsewhere.">
-              <button type="button" className="icon-btn" onClick={escapeString} disabled={!content.trim() || isFiltering}>
-                <ChevronsRightLeft size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Unescape" description="Decode a JSON string literal (e.g. pasted from a log field) back into real JSON.">
-              <button type="button" className="icon-btn" onClick={unescapeString} disabled={!content.trim() || isFiltering}>
-                <ChevronsLeftRight size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <select value={indent} onChange={(e) => setIndent(e.target.value === 'tab' ? 'tab' : Number(e.target.value))} disabled={isFiltering}>
-              {INDENT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-            </select>
+                <Tooltip label="Format" description="Pretty-print with the selected indent.">
+                  <button type="button" className="icon-btn" onClick={format} disabled={!content.trim() || !validation.valid}>
+                    <AlignLeft size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Minify" description="Collapse to a single line.">
+                  <button type="button" className="icon-btn" onClick={minify} disabled={!content.trim() || !validation.valid}>
+                    <Minimize2 size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Sort keys" description="Alphabetize object keys when formatting or minifying.">
+                  <button type="button" className={sortKeys ? 'active icon-btn' : 'icon-btn'} onClick={() => setSortKeys((v) => !v)}>
+                    <ArrowDownAZ size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Escape" description="Wrap the current content as a JSON string literal, for embedding it as a value elsewhere.">
+                  <button type="button" className="icon-btn" onClick={escapeString} disabled={!content.trim()}>
+                    <ChevronsRightLeft size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <Tooltip label="Unescape" description="Decode a JSON string literal (e.g. pasted from a log field) back into real JSON.">
+                  <button type="button" className="icon-btn" onClick={unescapeString} disabled={!content.trim()}>
+                    <ChevronsLeftRight size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                <select value={indent} onChange={(e) => setIndent(e.target.value === 'tab' ? 'tab' : Number(e.target.value))}>
+                  {INDENT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+                </select>
+              </>
+            )}
 
             <span className="json-toolbar-divider" />
 
             <Tooltip label="Wrap lines" description="Wrap long lines instead of scrolling horizontally.">
-              <button type="button" className={wrap ? 'active icon-btn' : 'icon-btn'} onClick={() => setWrap((v) => !v)}>
+              <button type="button" className={wrap ? 'active icon-btn' : 'icon-btn'} onClick={() => setWrap((v) => !v)} disabled={isViewMode && viewSubMode === 'table'}>
                 <WrapText size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
             <Tooltip label="Fold all" description="Collapse every object and array.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.foldAll()} disabled={!activeTab}>
+              <button type="button" className="icon-btn" onClick={() => editorRef.current?.foldAll()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
                 <FoldVertical size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
             <Tooltip label="Unfold all" description="Expand every collapsed object and array.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.unfoldAll()} disabled={!activeTab}>
+              <button type="button" className="icon-btn" onClick={() => editorRef.current?.unfoldAll()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
                 <UnfoldVertical size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
             <Tooltip label="Zoom out" description="Shrink the editor's font size.">
-              <button type="button" className="icon-btn" onClick={() => stepFontSize(-1)} disabled={fontSize <= MIN_FONT_SIZE}>
+              <button type="button" className="icon-btn" onClick={() => stepFontSize(-1)} disabled={fontSize <= MIN_FONT_SIZE || (isViewMode && viewSubMode === 'table')}>
                 <ZoomOut size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
             <Tooltip label="Zoom in" description="Enlarge the editor's font size.">
-              <button type="button" className="icon-btn" onClick={() => stepFontSize(1)} disabled={fontSize >= MAX_FONT_SIZE}>
+              <button type="button" className="icon-btn" onClick={() => stepFontSize(1)} disabled={fontSize >= MAX_FONT_SIZE || (isViewMode && viewSubMode === 'table')}>
                 <ZoomIn size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
@@ -548,88 +613,94 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
                 {copyStatus === 'Copied' ? <Check size={15} strokeWidth={1.75} /> : <Copy size={15} strokeWidth={1.75} />}
               </button>
             </Tooltip>
-            <Tooltip label="Clear" description="Empty this tab.">
-              <button type="button" className="icon-btn" onClick={clear} disabled={!content.trim()}>
-                <Trash2 size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
+            {mode === 'edit' && (
+              <Tooltip label="Clear" description="Empty this tab.">
+                <button type="button" className="icon-btn" onClick={clear} disabled={!content.trim()}>
+                  <Trash2 size={15} strokeWidth={1.75} />
+                </button>
+              </Tooltip>
+            )}
             <span className={content.trim() ? `json-validation ${validation.valid ? 'ok' : 'error'}` : 'json-validation'}>
               {content.trim() ? (validation.valid ? 'Valid JSON' : validation.error) : ''}
             </span>
           </div>
 
-          <div className="json-field-filter">
-            <div className="json-field-search-row">
-              <div className="json-field-search-wrap">
-                <input
-                  type="text"
-                  className="json-field-filter-input"
-                  placeholder='Search fields (fuzzy), Enter to add — e.g. "usr" finds userName'
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setSearchNote(null); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } }}
-                />
-                {pendingMatches && (
-                  <div className="json-field-picker">
-                    <p className="json-field-picker-hint">{`"${searchQuery.trim()}" matches multiple fields — pick which to include:`}</p>
-                    <div
-                      className="json-field-picker-options"
-                      ref={pickerOptionsRef}
-                      onKeyDown={handlePickerKeyDown}
-                    >
-                      {pendingMatches.map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          className={pendingSelection.has(name) ? 'view-menu-toggle active' : 'view-menu-toggle'}
-                          onClick={() => togglePending(name)}
-                        >
-                          <span>{name}</span>
-                          <span className="view-menu-toggle-indicator" />
-                        </button>
-                      ))}
+          {isViewMode && (
+            <div className="json-field-filter">
+              <div className="json-field-search-row">
+                <div className="json-field-search-wrap">
+                  <input
+                    type="text"
+                    className="json-field-filter-input"
+                    placeholder='Search fields (fuzzy), Enter to add — e.g. "usr" finds userName'
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setSearchNote(null); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } }}
+                  />
+                  {pendingMatches && (
+                    <div className="json-field-picker">
+                      <p className="json-field-picker-hint">{`"${searchQuery.trim()}" matches multiple fields — pick which to include:`}</p>
+                      <div
+                        className="json-field-picker-options"
+                        ref={pickerOptionsRef}
+                        onKeyDown={handlePickerKeyDown}
+                      >
+                        {pendingMatches.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className={pendingSelection.has(name) ? 'view-menu-toggle active' : 'view-menu-toggle'}
+                            onClick={() => togglePending(name)}
+                          >
+                            <span>{name}</span>
+                            <span className="view-menu-toggle-indicator" />
+                          </button>
+                        ))}
+                      </div>
+                      <p className="json-field-picker-keys">
+                        <kbd>↑↓</kbd> move  <kbd>Space</kbd> toggle  <kbd>Enter</kbd> confirm  <kbd>Esc</kbd> cancel
+                      </p>
+                      <div className="json-field-picker-actions">
+                        <button type="button" onClick={cancelPending}>Cancel</button>
+                        <button type="button" disabled={pendingSelection.size === 0} onClick={confirmPending}>Add selected</button>
+                      </div>
                     </div>
-                    <p className="json-field-picker-keys">
-                      <kbd>↑↓</kbd> move  <kbd>Space</kbd> toggle  <kbd>Enter</kbd> confirm  <kbd>Esc</kbd> cancel
-                    </p>
-                    <div className="json-field-picker-actions">
-                      <button type="button" onClick={cancelPending}>Cancel</button>
-                      <button type="button" disabled={pendingSelection.size === 0} onClick={confirmPending}>Add selected</button>
-                    </div>
+                  )}
+                </div>
+                <Tooltip label="Add field" description="Search for a field name (fuzzy) and add it to the filter.">
+                  <button type="button" className="icon-btn" onClick={runSearch} disabled={!searchQuery.trim()}>
+                    <Plus size={15} strokeWidth={1.75} />
+                  </button>
+                </Tooltip>
+                {selectedFields.length > 0 && (
+                  <div className="json-field-chips">
+                    {selectedFields.map((name) => (
+                      <span className="preset-chip" key={name} onContextMenu={(e) => handleChipContextMenu(e, name)}>
+                        <span className="preset-name">{name}</span>
+                        <button type="button" onClick={() => removeField(name)}>×</button>
+                      </span>
+                    ))}
+                    <button type="button" className="json-field-chips-clear" onClick={clearFields}>Clear all</button>
                   </div>
                 )}
+                {(searchNote || isFiltering) && (
+                  <span className="json-field-filter-status">
+                    {searchNote || `Showing ${selectedFields.length} field${selectedFields.length === 1 ? '' : 's'} (read-only)`}
+                  </span>
+                )}
               </div>
-              <Tooltip label="Add field" description="Search for a field name (fuzzy) and add it to the filter.">
-                <button type="button" className="icon-btn" onClick={runSearch} disabled={!searchQuery.trim()}>
-                  <Plus size={15} strokeWidth={1.75} />
-                </button>
-              </Tooltip>
-              {selectedFields.length > 0 && (
-                <div className="json-field-chips">
-                  {selectedFields.map((name) => (
-                    <span className="preset-chip" key={name} onContextMenu={(e) => handleChipContextMenu(e, name)}>
-                      <span className="preset-name">{name}</span>
-                      <button type="button" onClick={() => removeField(name)}>×</button>
-                    </span>
-                  ))}
-                  <button type="button" className="json-field-chips-clear" onClick={clearFields}>Clear all</button>
-                </div>
-              )}
-              {(searchNote || isFiltering) && (
-                <span className="json-field-filter-status">
-                  {searchNote || `Showing ${selectedFields.length} field${selectedFields.length === 1 ? '' : 's'} (read-only)`}
-                </span>
-              )}
             </div>
-          </div>
+          )}
 
           <div className="json-editor-body">
-            {activeTab && (
+            {activeTab && isViewMode && viewSubMode === 'table' ? (
+              <JsonTableView text={displayedText} />
+            ) : activeTab && (
               <JsonEditor
                 ref={editorRef}
                 value={displayedText}
-                onChange={isFiltering ? undefined : (v) => setContent(activeTab.id, v)}
-                readOnly={isFiltering}
+                onChange={isReadOnly ? undefined : (v) => setContent(activeTab.id, v)}
+                readOnly={isReadOnly}
                 wrap={wrap}
                 fontSize={fontSize}
                 height="100%"
