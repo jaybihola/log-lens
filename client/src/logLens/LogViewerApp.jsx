@@ -257,6 +257,11 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     <div className="app">
       <header className="app-header">
         <span className="app-title">log-lens</span>
+        <Tooltip label="Fields sidebar" description="Browse this index's cached fields, add columns, and see value distributions.">
+          <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
+            <PanelLeft size={16} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
         <TabBar
           tabs={tabMetaList}
           activeTabId={activeTabId}
@@ -296,11 +301,6 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               />
             )}
           </Popover>
-          <Tooltip label="Fields sidebar" description="Browse this index's cached fields, add columns, and see value distributions.">
-            <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
-              <PanelLeft size={16} strokeWidth={1.75} />
-            </button>
-          </Tooltip>
           <Tooltip label="Preferences" description="Environments, credentials, appearance, and other app settings.">
             <button type="button" className="icon-btn" onClick={() => setModal('preferences')}>
               <Settings size={16} strokeWidth={1.75} />
