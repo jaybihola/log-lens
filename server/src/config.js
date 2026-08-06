@@ -11,6 +11,12 @@ export const ENV_FILE = path.join(process.cwd(), '.env');
 export const JSON_LENS_STATE_FILE = path.join(os.homedir(), '.log-lens-json-state.json');
 export const JSON_LENS_SCRATCHES_DIR = path.join(os.homedir(), '.log-lens-scratches');
 
+// Index field name/type cache, accumulated from real query results (see
+// logLens/es/fieldCache.js) — deliberately its own file rather than folded
+// into STATE_FILE: it grows indefinitely across every environment+index ever
+// queried, an unrelated lifecycle to tabs/credentials/settings.
+export const INDEX_FIELDS_STATE_FILE = path.join(os.homedir(), '.log-lens-fields-state.json');
+
 const cliPath = process.argv[2] || process.env.LOG_FILE || null;
 
 export const config = {

@@ -41,7 +41,7 @@ just a map.
 |---|---|
 | `useTabs.js` | The big one: tab metadata (server-synced via `/api/tabs`) plus, per tab, a `ref`-held mutable line buffer (not React state — a fast-tailing background tab shouldn't force a re-render) and UI state (filter query, the time-histogram's `timeRange` selection, autoscroll, pause, expanded/pinned sets, extra columns). Renders batch to once per animation frame. Subscribes to `useLiveEvents` and reconciles a server restart (changed boot id) by reloading everything from scratch. Also tracks `attentionCounts` (unseen error/warn lines per background tab, real state — a tab bar badge needs to re-render off it) and exposes a ref-backed `getLastLineAt(tabId)` (no render triggered on every line) for `TabBar.jsx`'s quiet-tab indicator. |
 | `useLiveEvents.js` | Opens the shared `/api/events` SSE connection, dispatches `onLine`/`onStatus`/`onBootChanged` |
-| `useIndexFields.js` | An index's cached field name/type list — backs JQL field-name autocomplete and Preferences' path autocomplete |
+| `useIndexFields.js` | An index's accumulated field name/type list, derived server-side from real query hits (never a dedicated mapping fetch — see `docs/ARCHITECTURE.md`) — backs JQL field-name autocomplete and Preferences' path autocomplete. Empty for an index nobody's queried yet; that's expected, not an error |
 | `useFieldsSidebar.js` | The fields sidebar's open/width state, localStorage |
 | `useFilterMode.js` | Text vs. visual filter-box mode, localStorage — both read/write the same `filterQuery` string |
 | `usePresets.js` | Named, saved JQL queries, localStorage |

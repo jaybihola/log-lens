@@ -185,11 +185,32 @@ after widening a date range is safe to call repeatedly.
 to, and much simpler than, the client-side JQL parser
 (`client/src/logLens/filter/simpleJql.js`); don't confuse the two, they
 solve different problems (querying a remote index vs. filtering an
-already-fetched buffer). `logLens/es/fieldCache.js` also fetches and caches
-(for the process lifetime, no invalidation — this is a dev tool restarted
-often enough that staleness isn't worth solving) each index's field list
-(from its ES mapping, flattened to dot-paths) and each fold filter's
-distinct values (a terms aggregation).
+already-fetched buffer). `logLens/es/fieldCache.js` also caches each fold
+filter's distinct values (a terms aggregation, process-lifetime only — this
+is a dev tool restarted often enough that staleness isn't worth solving).
+
+Each index's field name+type list is deliberately **not** fetched from
+`_mapping` — a dedicated mapping request is a real, unbounded, cluster-taxing
+metadata operation (some production indices run 80k+ fields, or index
+*patterns* fanning out to many concrete indices), and firing one just because
+a tab became active or a Preferences pane was opened isn't a risk this tool
+takes, no exceptions and no opt-out setting. Instead, `runEsSearch` flattens
+every real hit's `_source` into dot-path fields (same shape as the old
+mapping-flattening, walking real values instead) and merges newly-seen field
+names into that environment+index's accumulated cache — nothing is ever
+indexed unless a user actually ran that query. The type label is inferred
+from the JS value (`typeof`/`Array.isArray`/`null`), which is necessarily
+less precise than ES's own mapping types (can't distinguish `keyword` from
+`text`, or `long`/`integer`/`float`, and dates read as plain strings) — an
+accepted trade-off for never issuing a dedicated indexing request. The cache
+persists to `~/.log-lens-fields-state.json` (`config.js`'s
+`INDEX_FIELDS_STATE_FILE`, same `fs.readFileSync`/`writeFileSync` pattern as
+`logLens/state.js`) and only ever grows, surviving restarts — an in-memory-only
+cache would drain to empty every dev-server restart, defeating the point.
+`fetchIndexFields` (and the `GET /api/index-fields` route) are pure reads of
+this accumulated cache; an index nobody's queried yet just returns an empty
+list, not an error — the field list fills in as the app gets used, not
+upfront.
 
 **Credentials** (`logLens/credentials.js`) are named Basic Auth pairs, held
 server-side only and never sent to the browser (the list endpoint redacts

@@ -1,19 +1,55 @@
+import fs from 'node:fs';
 import { environmentUrl, fieldTypeOverrides, foldFilterByKey, getEnvironment } from '../settings.js';
 import { getCredentialById } from '../credentials.js';
 import { buildEsQuery } from './queryBuilder.js';
+import { INDEX_FIELDS_STATE_FILE } from '../../config.js';
 
 const ES_TIMESTAMP_SORT = [{ '@timestamp': { order: 'asc' } }];
 const ES_DEFAULT_SIZE = 200;
 const ES_MAX_SIZE = 10000; // Elasticsearch's default index.max_result_window — the real ceiling
 
 // Distinct values per environment+index+field, for the chip inputs'
-// autocomplete, and each index's field name+type pairs (from its ES mapping)
-// for path autocomplete and the JQL filter box. Cached for the life of the
-// process — the tool restarts often enough (dev tool, not a long-lived
-// service) that a stale value sticking around isn't worth adding invalidation
-// for.
+// autocomplete. Cached for the life of the process — the tool restarts often
+// enough (dev tool, not a long-lived service) that a stale value sticking
+// around isn't worth adding invalidation for.
 const fieldValuesCache = new Map();
-const indexFieldsCache = new Map(); // "environment:index" -> { name, type }[] (raw, pre-override)
+
+// Each index's field name+type pairs — "environment:index" -> Map<fieldName, type>.
+// Deliberately *not* fetched from `_mapping`: a dedicated mapping request is a
+// real, unbounded, cluster-taxing metadata operation (some production indices
+// here run 80k+ fields, or index *patterns* fanning out to many concrete
+// indices), and firing one just because a tab became active or a Preferences
+// pane got opened — not because a user deliberately asked for it — isn't a
+// risk this tool should take. Instead, fields are derived purely from the
+// `_source` of real search hits (see `mergeObservedFields`, called from
+// `runEsSearch`), so nothing is ever indexed unless a user actually ran that
+// query. Persisted to disk (see `loadFieldsCache`/`persistFieldsCache`) since
+// it's meant to accumulate across restarts, not reset to empty every time —
+// the whole point is that it keeps growing over the app's lifetime.
+const indexFieldsCache = loadFieldsCache();
+
+function loadFieldsCache() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(INDEX_FIELDS_STATE_FILE, 'utf8'));
+    const map = new Map();
+    for (const [cacheKey, fields] of Object.entries(parsed || {})) {
+      map.set(cacheKey, new Map(Object.entries(fields || {})));
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
+function persistFieldsCache() {
+  try {
+    const obj = {};
+    for (const [cacheKey, fields] of indexFieldsCache) obj[cacheKey] = Object.fromEntries(fields);
+    fs.writeFileSync(INDEX_FIELDS_STATE_FILE, JSON.stringify(obj));
+  } catch {
+    // not fatal — persistence just won't survive a restart
+  }
+}
 
 function authHeader(creds) {
   return `Basic ${Buffer.from(`${creds.username}:${creds.password || ''}`).toString('base64')}`;
@@ -34,62 +70,86 @@ function requireCredential(environmentName) {
   return creds;
 }
 
-function mappingUrl(baseUrl, index) {
-  const u = new URL(baseUrl);
-  u.pathname = `/${index.split('/').map(encodeURIComponent).join('/')}/_mapping`;
-  u.search = '';
-  return u.toString();
-}
-
-// Flattens an ES mapping's nested `properties` (and `fields` multi-field)
-// tree into dot-path leaf fields, each carrying its ES type (e.g. "keyword",
-// "long", "date") so callers can show/use it without a second round trip.
-function flattenMappingProperties(properties, prefix, out) {
-  for (const [key, def] of Object.entries(properties || {})) {
-    const fieldPath = prefix ? `${prefix}.${key}` : key;
-    if (def && typeof def === 'object' && def.properties) {
-      flattenMappingProperties(def.properties, fieldPath, out);
-    } else {
-      out.push({ name: fieldPath, type: def?.type || 'unknown' });
-      if (def && typeof def === 'object' && def.fields) {
-        for (const [sub, subDef] of Object.entries(def.fields)) {
-          out.push({ name: `${fieldPath}.${sub}`, type: subDef?.type || 'unknown' });
-        }
-      }
-    }
+// Recursively flattens a real hit's `_source` into dot-path fields, inferring
+// a type label from the JS value itself (typeof / Array.isArray / null) —
+// there's no ES mapping to read anymore. Known, accepted trade-off: this is
+// necessarily less precise than ES's own mapping types — it can't tell
+// `keyword` from `text`, or `long`/`integer`/`float` apart (all "number"),
+// and a date shows up as "string" like any other. An array of objects has
+// its items' fields flattened into the same paths (mirroring how ES itself
+// doesn't distinguish "field" from "array of that field" in a mapping); an
+// array of scalars is just labeled "array".
+function flattenDocValues(value, prefix, out) {
+  if (value === null || value === undefined) {
+    if (prefix) out.set(prefix, 'null');
+    return out;
   }
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      if (prefix) out.set(prefix, 'array');
+      return out;
+    }
+    if (value.some((v) => v && typeof v === 'object' && !Array.isArray(v))) {
+      value.forEach((item) => flattenDocValues(item, prefix, out));
+    } else if (prefix) {
+      out.set(prefix, 'array');
+    }
+    return out;
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value);
+    if (!entries.length) {
+      if (prefix) out.set(prefix, 'object');
+      return out;
+    }
+    entries.forEach(([key, v]) => flattenDocValues(v, prefix ? `${prefix}.${key}` : key, out));
+    return out;
+  }
+  if (prefix) out.set(prefix, typeof value);
   return out;
 }
 
+// Merges newly-seen field names (from real search hits) into an
+// environment+index's accumulated cache. Existing entries are left alone —
+// once a field's type has been observed it isn't churned on every later
+// query — only genuinely new field names get added, so the list only ever
+// grows.
+function mergeObservedFields(cacheKey, hits) {
+  let fields = indexFieldsCache.get(cacheKey);
+  if (!fields) {
+    fields = new Map();
+    indexFieldsCache.set(cacheKey, fields);
+  }
+  let changed = false;
+  for (const hit of hits) {
+    const flat = flattenDocValues(hit._source, '', new Map());
+    for (const [name, type] of flat) {
+      if (!fields.has(name)) {
+        fields.set(name, type);
+        changed = true;
+      }
+    }
+  }
+  if (changed) persistFieldsCache();
+}
+
 // Returns each field as { name, type, detectedType, overridden }: `type` is
-// the effective type (a saved override, if any, else the ES-detected type),
-// `detectedType` is always the raw mapping type — kept separate so the
-// Preferences UI can show "detected: text" next to an active override
-// without losing track of what ES actually reported.
+// the effective type (a saved override, if any, else the hit-derived type),
+// `detectedType` is always the raw hit-derived type — kept separate so the
+// Preferences UI can show "detected: string" next to an active override
+// without losing track of what was actually observed. A pure read of the
+// accumulated cache — no live ES call, ever; an index nobody's queried yet
+// just returns an empty list, not an error.
 export async function fetchIndexFields(environment, index) {
   if (!index) throw new Error('no index specified');
   const cacheKey = `${environment}:${index}`;
-  if (!indexFieldsCache.has(cacheKey)) {
-    const esUrl = environmentUrl(environment);
-    if (!esUrl) throw new Error(`unknown environment: ${environment}`);
-    const creds = requireCredential(environment);
-    const res = await fetch(mappingUrl(esUrl, index), { headers: { Authorization: authHeader(creds) } });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`mapping request failed (${res.status}): ${text || res.statusText}`);
-    }
-    const json = await res.json();
-    const byName = new Map();
-    for (const indexDef of Object.values(json)) {
-      flattenMappingProperties(indexDef?.mappings?.properties, '', []).forEach((f) => byName.set(f.name, f.type));
-    }
-    const sorted = [...byName.entries()].map(([name, type]) => ({ name, type })).sort((a, b) => a.name.localeCompare(b.name));
-    indexFieldsCache.set(cacheKey, sorted);
-  }
+  const fields = indexFieldsCache.get(cacheKey) || new Map();
   const overrides = fieldTypeOverrides(environment, index);
-  return indexFieldsCache.get(cacheKey).map(({ name, type }) => (overrides[name]
-    ? { name, type: overrides[name], detectedType: type, overridden: true }
-    : { name, type, detectedType: type, overridden: false }));
+  return [...fields.entries()]
+    .map(([name, type]) => (overrides[name]
+      ? { name, type: overrides[name], detectedType: type, overridden: true }
+      : { name, type, detectedType: type, overridden: false }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Fold filters are defined per index, so the index is required here (not
@@ -160,5 +220,10 @@ export async function runEsSearch(environment, queryConfig) {
   const json = await res.json();
   const response = json.responses?.[0];
   if (response?.error) throw new Error(response.error.reason ?? JSON.stringify(response.error));
-  return response?.hits?.hits ?? [];
+  const hits = response?.hits?.hits ?? [];
+  // The only place fields ever get indexed: real hits from a real, user-run
+  // search — never a dedicated request of their own. See the comment above
+  // `indexFieldsCache`.
+  if (hits.length) mergeObservedFields(`${environment}:${index}`, hits);
+  return hits;
 }

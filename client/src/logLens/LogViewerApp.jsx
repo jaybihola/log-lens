@@ -56,9 +56,14 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   const [findOpen, setFindOpen] = useState(false);
   const filterInputRef = useRef(null);
   const entryViewRef = useRef(null);
+  // Bumped after every query run so useIndexFields re-reads the accumulated
+  // field cache — fields are now derived from hits, so a re-fetch (e.g. a
+  // widened date range) can surface newly-observed fields without switching
+  // tabs away and back.
+  const [fieldsRefreshToken, setFieldsRefreshToken] = useState(0);
 
   const activeTab = tabMetaList.find((t) => t.id === activeTabId) || null;
-  const indexFields = useIndexFields(activeTab?.environment, activeTab?.queryConfig?.index);
+  const indexFields = useIndexFields(activeTab?.environment, activeTab?.queryConfig?.index, fieldsRefreshToken);
   const exportLabel = activeTab
     ? (activeTab.kind === 'api' ? (activeTab.environment || 'remote-query') : basename(activeTab.file || 'log'))
     : 'log-lens';
@@ -97,6 +102,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     setFetching(true);
     try {
       await fetchActiveTab();
+      setFieldsRefreshToken((n) => n + 1);
     } finally {
       setFetching(false);
     }
