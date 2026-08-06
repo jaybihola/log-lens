@@ -40,6 +40,20 @@ together from `App.jsx` (no lazy-loading — matches the JS side's
 "everything mounted, always" philosophy, and the class names between the two
 tool stylesheets don't collide by design, so load order doesn't matter).
 
+`index.css` holds the design tokens all three files build on: the color
+system (`--bg`/`--panel*`/`--border*`/`--fg`/`--dim*`, semantic
+`--accent`/`--error`/`--warn`/`--info`/`--debug` + `-rgb` pairs for
+alpha-blended tints, `--syntax-*`, `--shadow`/`--overlay`), plus a spacing
+scale (`--space-1` 4px through `--space-6` 32px, with a few named half-steps
+— `--space-1-5`/`--space-2-5`/`--space-4-5` — for 6px/10px/18px, which were
+themselves common enough in the existing layout to be worth keeping exactly
+rather than rounding away) and a type scale (`--text-xs` 11px through
+`--text-lg` 16px) collapsing what used to be close to a dozen ad hoc
+font-size values, including odd ones like `10.5px`/`12.5px`. Not every
+padding/margin/gap/font-size in the app maps cleanly onto these scales —
+one-off values that don't round to a step without visibly shifting a layout
+were deliberately left as literal pixels rather than forced onto the scale.
+
 ### Changing something in `shared/`
 
 Because both tools depend on it, a change here needs more care than a
