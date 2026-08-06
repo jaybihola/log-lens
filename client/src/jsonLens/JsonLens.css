@@ -17,7 +17,7 @@
 .json-file-row-icon { flex: 0 0 auto; color: var(--dim); }
 .json-file-row.active .json-file-row-icon { color: var(--accent); }
 .json-file-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
-.json-file-row-dirty { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.json-file-row-dirty { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 .json-file-empty { margin: 2px 0; font-size: var(--text-sm); color: var(--dim); font-style: italic; }
 
 /* JsonTabBar's rename-in-place input — Log Lens's TabBar has no rename
@@ -27,8 +27,6 @@
 .json-toolbar {
   display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;
   padding: var(--space-2-5) var(--space-3); background: var(--panel); border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  position: relative; z-index: 4;
 }
 .json-toolbar-divider { width: 1px; height: 20px; background: var(--border); flex: 0 0 auto; margin: 0 2px; }
 

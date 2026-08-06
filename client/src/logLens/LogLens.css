@@ -37,11 +37,7 @@
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  position: relative;
-  z-index: 4;
 }
-.toolbar-divider { width: 1px; height: 20px; background: var(--border); flex: 0 0 auto; margin: 0 2px; }
 .filter-input-wrap { position: relative; flex: 1; min-width: 220px; }
 .filter-input { width: 100%; font-family: monospace; }
 .filter-suggest {
