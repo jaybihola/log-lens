@@ -46,7 +46,7 @@ src/
 │   │   └── tailing.js               the poll loop: truncation detection, continuation-line joining, line push
 │   ├── es/
 │   │   ├── queryBuilder.js         a small hand-rolled KQL-ish parser -> Elasticsearch bool query (NOT the client's JQL)
-│   │   └── fieldCache.js            index field list + fold-filter value fetch/cache, the actual ES/OpenSearch HTTP calls
+│   │   └── fieldCache.js            index field list (accumulated from real hit `_source`s, never a dedicated mapping fetch — persisted to ~/.log-lens-fields-state.json) + fold-filter value fetch/cache, the actual ES/OpenSearch HTTP calls
 │   └── routes/                one Fastify plugin per feature area — see the route table below
 └── jsonLens/
     ├── store.js                its own state file (open roots + scratch metadata) — persists on every mutation, not via a separate step
@@ -74,7 +74,7 @@ src/
 | GET/POST/PUT/DELETE | `/api/credentials`(`/:id`) | `logLens/routes/credentials.js` | Named ES credentials CRUD |
 | POST | `/api/es-query-preview` | `logLens/routes/esFields.js` | The exact search body a fetch would send, for the "raw request" editor |
 | GET | `/api/es-field-values` | | Fold-filter chip autocomplete values |
-| GET | `/api/index-fields` | | An index's field name/type list |
+| GET | `/api/index-fields` | | An index's accumulated field name/type list (pure read of the hit-derived cache, never a live ES call) |
 | GET/POST/DELETE | `/api/json-lens/roots` | `jsonLens/routes.js` | JSON Lens's open folder roots |
 | GET | `/api/json-lens/browse` | | `.json`-filtered directory listing |
 | GET/POST | `/api/json-lens/file` | | Read/write an arbitrary on-disk JSON file |

@@ -41,6 +41,18 @@ no such prior spec; they're native to this codebase.
   handling (Preferences-modal-saved > `.env` > process env), a KQL-ish query builder, quick date
   ranges, fold-filter chip inputs with live autocomplete, dedup-on-refetch, and a
   `mock-es-server.js` test double.
+- **Hit-derived index field cache** — an index's field name/type list (path autocomplete, JQL
+  field-name completion, Preferences' field-types table) is never fetched via a dedicated `_mapping`
+  request; some real environments run indices with tens of thousands of fields or index *patterns*
+  fanning out across many concrete indices, so a mapping fetch triggered by mere UI navigation (a
+  tab becoming active, a Preferences pane opening) was an unbounded, cluster-taxing risk. Instead,
+  every real search (`fieldCache.js`'s `runEsSearch`) flattens its hits' `_source` into dot-path
+  fields and merges newly-seen names into that environment+index's cache, persisted to
+  `~/.log-lens-fields-state.json` and only ever growing (survives restarts — see
+  `docs/ARCHITECTURE.md`). Trade-off: the type label is inferred from the JS value
+  (`typeof`/`Array.isArray`/`null`), not ES's own mapping — it can't distinguish `keyword` from
+  `text`, or `long`/`integer`/`float` apart, and dates read as plain strings. An index nobody's
+  queried yet just shows an empty/small field list, not an error — it fills in as it's used.
 - Saved filter presets — name/reapply/delete a filter query, persisted per-browser.
 - Highlight-only mode — show every buffered line, dim non-matches instead of hiding them.
 - Pinned lines (own background, listed in the "More" menu for quick jump-back regardless of the
