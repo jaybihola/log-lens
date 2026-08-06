@@ -58,11 +58,9 @@ export function Toolbar({
         </button>
       </Tooltip>
 
-      <span className="toolbar-divider" />
-
       {isApiTab && (
         <Tooltip label={fetching ? 'Fetching…' : 'Fetch new'} description="Re-run this tab's query against the remote index.">
-          <button type="button" className="icon-btn btn-primary" onClick={onFetch} disabled={fetching}>
+          <button type="button" className="icon-btn" onClick={onFetch} disabled={fetching}>
             <RefreshCw size={15} strokeWidth={1.75} className={fetching ? 'spin' : ''} />
           </button>
         </Tooltip>
@@ -86,8 +84,6 @@ export function Toolbar({
           <Search size={15} strokeWidth={1.75} />
         </button>
       </Tooltip>
-
-      <span className="toolbar-divider" />
 
       <Popover
         align="right"
