@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { FieldStatsPopover } from './FieldStatsPopover.jsx';
+import { SidebarResizeHandle } from './SidebarResizeHandle.jsx';
 
 const SHOW_DELAY_MS = 350;
 // Grace period before hiding, so moving the cursor from the row to the
@@ -14,7 +15,7 @@ const HIDE_DELAY_MS = 200;
 // table/expanded-doc "+ Column" buttons. Hovering a row (briefly, to avoid
 // recomputing on every row while scanning the list) shows its top-value
 // distribution, computed from the tab's own buffer — see FieldStatsPopover.
-export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApplyFilter }) {
+export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApplyFilter, width, onResize }) {
   const [search, setSearch] = useState('');
   const [hover, setHover] = useState(null); // { field, top, left } | null
   const showTimer = useRef(null);
@@ -49,7 +50,7 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
   };
 
   return (
-    <aside className="fields-sidebar">
+    <aside className="fields-sidebar" style={{ flexBasis: width }}>
       <input
         type="text"
         className="fields-sidebar-search"
@@ -108,6 +109,7 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
           onApply={(field, value) => { onApplyFilter(field, value); hideNow(); }}
         />
       )}
+      <SidebarResizeHandle width={width} onChange={onResize} />
     </aside>
   );
 }

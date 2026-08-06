@@ -88,8 +88,12 @@ export function detectAndHighlight(text, formatJson) {
 }
 
 // Applies search-term highlighting to already-marked-up HTML without
-// touching tag markup.
-export function applyTermHits(html, terms, caseSensitive) {
+// touching tag markup. Takes a className so the filter's own highlighting
+// ("hit") and the find bar's ("find-hit") can be visually distinct, and
+// layered — find highlighting is applied as a second pass over already
+// filter-highlighted HTML, so a term matching both just nests spans, which
+// is harmless (both stylings simply combine).
+export function applyTermHits(html, terms, caseSensitive, className = 'hit') {
   if (!terms.length) return html;
   const parts = html.split(/(<[^>]+>)/);
   for (let i = 0; i < parts.length; i += 2) {
@@ -97,7 +101,7 @@ export function applyTermHits(html, terms, caseSensitive) {
     for (const term of terms) {
       if (!term) continue;
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      seg = seg.replace(new RegExp(`(${escaped})`, caseSensitive ? 'g' : 'ig'), '<span class="hit">$1</span>');
+      seg = seg.replace(new RegExp(`(${escaped})`, caseSensitive ? 'g' : 'ig'), `<span class="${className}">$1</span>`);
     }
     parts[i] = seg;
   }

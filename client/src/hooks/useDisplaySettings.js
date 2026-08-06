@@ -9,12 +9,9 @@ function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     const fontSize = Number(raw.fontSize);
-    return {
-      highlightOnly: !!raw.highlightOnly,
-      fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE,
-    };
+    return { fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE };
   } catch {
-    return { highlightOnly: false, fontSize: DEFAULT_FONT_SIZE };
+    return { fontSize: DEFAULT_FONT_SIZE };
   }
 }
 
@@ -29,10 +26,6 @@ export function useDisplaySettings() {
     } catch { /* localStorage unavailable — display-only feature, not fatal */ }
   }, [settings]);
 
-  const toggleHighlightOnly = useCallback(() => {
-    setSettings((prev) => ({ ...prev, highlightOnly: !prev.highlightOnly }));
-  }, []);
-
   const stepFontSize = useCallback((delta) => {
     setSettings((prev) => ({
       ...prev,
@@ -40,5 +33,5 @@ export function useDisplaySettings() {
     }));
   }, []);
 
-  return { ...settings, toggleHighlightOnly, stepFontSize };
+  return { ...settings, stepFontSize };
 }
