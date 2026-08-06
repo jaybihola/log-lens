@@ -41,7 +41,10 @@
   display: flex; align-items: center; gap: 2px; flex: 0 0 auto;
   padding: 2px; border-radius: 7px; background: var(--panel-sunken);
 }
-.json-mode-toggle .icon-btn { display: flex; align-items: center; gap: 5px; border-radius: 5px; }
+.json-mode-toggle .icon-btn {
+  width: auto; height: 26px; padding: 0 var(--space-2-5);
+  display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 5px;
+}
 .json-mode-toggle-label { font-size: var(--text-sm); }
 .json-validation { font-size: var(--text-sm); font-family: monospace; color: var(--dim); }
 .json-validation.ok { color: var(--info); }
