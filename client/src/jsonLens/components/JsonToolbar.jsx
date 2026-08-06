@@ -1,5 +1,5 @@
 import {
-  AlignLeft, Minimize2, ArrowDownAZ, WrapText, Copy, Check, Download, Upload, Trash2,
+  Indent, Minimize2, ArrowDownAZ, WrapText, Copy, Check, Download, Upload, Trash2,
   Save, SaveAll, Undo2, Redo2, Search, FoldVertical, UnfoldVertical, Hash,
   ZoomIn, ZoomOut, ChevronsLeftRight, ChevronsRightLeft, Pencil, Eye, Code2, Table2,
 } from 'lucide-react';
@@ -134,7 +134,7 @@ export function JsonToolbar({
 
           <Tooltip label="Format" description="Pretty-print with the selected indent.">
             <button type="button" className="icon-btn" onClick={onFormat} disabled={!content.trim() || !validation.valid}>
-              <AlignLeft size={15} strokeWidth={1.75} />
+              <Indent size={15} strokeWidth={1.75} />
             </button>
           </Tooltip>
           <Tooltip label="Minify" description="Collapse to a single line.">
