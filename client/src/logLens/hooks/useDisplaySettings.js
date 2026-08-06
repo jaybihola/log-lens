@@ -11,10 +11,13 @@ function load() {
     const fontSize = Number(raw.fontSize);
     return {
       fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE,
-      histogramOpen: raw.histogramOpen === true,
+      // Default to visible for a first-time user (no stored value at all),
+      // but keep respecting an explicit prior choice either way — only
+      // `undefined` (key never written) falls back to the new default.
+      histogramOpen: typeof raw.histogramOpen === 'boolean' ? raw.histogramOpen : true,
     };
   } catch {
-    return { fontSize: DEFAULT_FONT_SIZE, histogramOpen: false };
+    return { fontSize: DEFAULT_FONT_SIZE, histogramOpen: true };
   }
 }
 
