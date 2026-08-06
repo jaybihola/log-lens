@@ -373,6 +373,12 @@ and JSON Lens (or are ready to be, by any future tool):
 - **`Tooltip.jsx`** — custom (not the native `title` attribute), label +
   one-line description, `disabled` prop for suppressing it while some other
   popover triggered by the same element is already open.
+- **`Dropdown.jsx`** — custom `<select>` replacement (the app has no native
+  `<select>` anywhere): a button trigger + a portaled listbox panel, same
+  portal-to-`document.body` rationale as `ContextMenu.jsx`. Full keyboard nav
+  (arrows/Home/End/Enter/Escape/Tab), click-outside/scroll/resize close, and
+  viewport clamping that flips the panel above the trigger when there isn't
+  room below.
 - **`ConfirmModal.jsx`** / **`PromptModal.jsx`** — the app has no native
   `window.confirm`/`window.prompt` anywhere; these are the generic
   replacements every "are you sure" / "name this" flow uses.
