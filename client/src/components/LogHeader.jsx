@@ -1,6 +1,17 @@
 import { ColumnResizeHandle } from './ColumnResizeHandle.jsx';
+import { ContextMenu } from './ContextMenu.jsx';
+import { useContextMenu } from '../hooks/useContextMenu.js';
 
 export function LogHeader({ columns, onRemoveColumn, tsWidth, badgeWidth, extraColumnWidth, onResizeColumn }) {
+  const { menu, openMenu, closeMenu } = useContextMenu();
+
+  const handleContextMenu = (e, key) => {
+    openMenu(e, [
+      { label: 'Copy field name', onClick: () => navigator.clipboard.writeText(key) },
+      { label: 'Remove column', onClick: () => onRemoveColumn(key), danger: true },
+    ]);
+  };
+
   return (
     <div className="log-header">
       <span className="pin-col" />
@@ -17,7 +28,7 @@ export function LogHeader({ columns, onRemoveColumn, tsWidth, badgeWidth, extraC
       {columns.map((key) => {
         const width = extraColumnWidth(key);
         return (
-          <span className="col-extra" key={key} title={key} style={{ width }}>
+          <span className="col-extra" key={key} title={key} style={{ width }} onContextMenu={(e) => handleContextMenu(e, key)}>
             <span className="col-extra-label">{key}</span>
             <span className="col-remove-btn" title="Remove column" onClick={() => onRemoveColumn(key)}>×</span>
             <ColumnResizeHandle width={width} onChange={(w) => onResizeColumn(key, w)} />
@@ -26,6 +37,7 @@ export function LogHeader({ columns, onRemoveColumn, tsWidth, badgeWidth, extraC
       })}
       <span className="text">Message</span>
       <span className="actions" />
+      {menu && <ContextMenu {...menu} onClose={closeMenu} />}
     </div>
   );
 }

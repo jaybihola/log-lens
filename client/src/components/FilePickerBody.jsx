@@ -6,17 +6,37 @@ function basename(p) {
   return parts[parts.length - 1] || p;
 }
 
-export function FilePickerBody({ onOpen, onClose, recentFiles = [], onRemoveRecent }) {
+function joinPath(dir, name) {
+  if (!dir) return name;
+  return dir.endsWith('/') ? `${dir}${name}` : `${dir}/${name}`;
+}
+
+// Directory-browsing UI shared across every "pick something on disk" flow in
+// the app. `mode` decides what the bottom action row looks like and what
+// `onOpen(path)` ultimately gets called with:
+//  - 'open-file' (default, Log Lens's original behavior, untouched): type or
+//    double-click a file path, Open.
+//  - 'choose-folder': confirms the currently browsed directory itself —
+//    JSON Lens's "Add folder".
+//  - 'save-file': browse to a destination directory, type a filename,
+//    Save — JSON Lens's "Save As".
+// `browseFn` defaults to Log Lens's own /api/browse; JSON Lens passes its
+// own json-filtered browse endpoint instead.
+export function FilePickerBody({
+  onOpen, onClose, recentFiles = [], onRemoveRecent,
+  mode = 'open-file', browseFn = api.browse, initialFileName = '',
+}) {
   const [dir, setDir] = useState(null);
   const [parent, setParent] = useState(null);
   const [entries, setEntries] = useState([]);
   const [pathInput, setPathInput] = useState('');
+  const [fileName, setFileName] = useState(initialFileName);
   const [showHidden, setShowHidden] = useState(false);
   const [error, setError] = useState(null);
 
   const browseTo = async (target) => {
     try {
-      const data = await api.browse(target, showHidden);
+      const data = await browseFn(target, showHidden);
       setDir(data.dir);
       setParent(data.parent);
       setEntries(data.entries);
@@ -32,10 +52,16 @@ export function FilePickerBody({ onOpen, onClose, recentFiles = [], onRemoveRece
   const openTyped = () => {
     if (pathInput.trim()) onOpen(pathInput.trim());
   };
+  const chooseFolder = () => {
+    if (dir) onOpen(dir);
+  };
+  const saveAs = () => {
+    if (dir && fileName.trim()) onOpen(joinPath(dir, fileName.trim()));
+  };
 
   return (
     <>
-      {recentFiles.length > 0 && (
+      {mode === 'open-file' && recentFiles.length > 0 && (
         <div className="picker-recent">
           <label>Recent</label>
           <div className="preset-list">
@@ -62,33 +88,64 @@ export function FilePickerBody({ onOpen, onClose, recentFiles = [], onRemoveRece
         )}
         {entries.map((entry) => {
           const full = dir === '/' ? `/${entry.name}` : `${dir}/${entry.name}`;
+          const selectEntry = () => {
+            if (entry.isDir) { browseTo(full); return; }
+            if (mode === 'save-file') setFileName(entry.name);
+            else setPathInput(full);
+          };
           return (
             <div
               key={entry.name}
               className={`picker-entry ${entry.isDir ? 'dir' : 'file'}`}
-              onClick={() => (entry.isDir ? browseTo(full) : setPathInput(full))}
-              onDoubleClick={() => { if (!entry.isDir) onOpen(full); }}
+              onClick={selectEntry}
+              onDoubleClick={() => { if (!entry.isDir && mode === 'open-file') onOpen(full); }}
             >
               {entry.isDir ? '📁' : '📄'} {entry.name}
             </div>
           );
         })}
       </div>
-      <label className="picker-hidden-toggle">
-        <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} />
+      <button
+        type="button"
+        className={showHidden ? 'picker-hidden-toggle active' : 'picker-hidden-toggle'}
+        onClick={() => setShowHidden((v) => !v)}
+      >
         Show hidden files
-      </label>
-      <div className="picker-path-row">
-        <input
-          type="text"
-          value={pathInput}
-          onChange={(e) => setPathInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') openTyped(); }}
-          placeholder="/path/to/app.log"
-        />
-        <button type="button" onClick={openTyped}>Open</button>
-        <button type="button" onClick={onClose}>Cancel</button>
-      </div>
+      </button>
+
+      {mode === 'open-file' && (
+        <div className="picker-path-row">
+          <input
+            type="text"
+            value={pathInput}
+            onChange={(e) => setPathInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') openTyped(); }}
+            placeholder="/path/to/app.log"
+          />
+          <button type="button" onClick={openTyped}>Open</button>
+          <button type="button" onClick={onClose}>Cancel</button>
+        </div>
+      )}
+      {mode === 'choose-folder' && (
+        <div className="picker-path-row">
+          <input type="text" value={dir || ''} readOnly />
+          <button type="button" onClick={chooseFolder} disabled={!dir}>Choose this folder</button>
+          <button type="button" onClick={onClose}>Cancel</button>
+        </div>
+      )}
+      {mode === 'save-file' && (
+        <div className="picker-path-row">
+          <input
+            type="text"
+            value={fileName}
+            onChange={(e) => setFileName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') saveAs(); }}
+            placeholder="filename.json"
+          />
+          <button type="button" onClick={saveAs} disabled={!fileName.trim()}>Save</button>
+          <button type="button" onClick={onClose}>Cancel</button>
+        </div>
+      )}
     </>
   );
 }

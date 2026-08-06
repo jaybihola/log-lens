@@ -1,21 +1,4 @@
-async function request(path, options) {
-  const res = await fetch(path, options);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error || res.statusText);
-  return body;
-}
-
-const jsonPost = (path, body) => request(path, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-});
-
-const jsonPut = (path, body) => request(path, {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-});
+import { request, jsonPost, jsonPut } from './http.js';
 
 export const api = {
   listTabs: () => request('/api/tabs'),

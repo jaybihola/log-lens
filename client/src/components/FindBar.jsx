@@ -28,10 +28,14 @@ export function FindBar({ query, onQueryChange, caseSensitive, onToggleCaseSensi
       <span className="find-bar-count">{query.trim() ? `${matchCount ? currentIndex + 1 : 0}/${matchCount}` : ''}</span>
       <button type="button" title="Previous match (Shift+Enter)" onClick={onPrev} disabled={!matchCount}>↑</button>
       <button type="button" title="Next match (Enter)" onClick={onNext} disabled={!matchCount}>↓</button>
-      <label className="find-bar-case" title="Case-sensitive">
-        <input type="checkbox" checked={caseSensitive} onChange={onToggleCaseSensitive} />
+      <button
+        type="button"
+        className={caseSensitive ? 'active' : ''}
+        title="Case-sensitive"
+        onClick={onToggleCaseSensitive}
+      >
         Aa
-      </label>
+      </button>
       <button type="button" title="Close (Esc)" onClick={onClose}>×</button>
     </div>
   );

@@ -100,18 +100,36 @@ body {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+/* Buttons get real depth (a soft drop shadow, a hover background shift on
+   top of the border-color change, a press-down micro-interaction) instead
+   of reading as flat bordered text — the same "every button in the app
+   inherits this" trick already used for the custom checkbox/toggle system,
+   so this one change reaches every button everywhere. */
 button {
   background: var(--panel-2);
   color: var(--fg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 11px;
+  border-radius: 7px;
+  padding: 7px 12px;
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.08s, box-shadow 0.12s;
 }
-button:hover { border-color: var(--accent); }
-button.active { background: rgba(var(--accent-rgb), 0.16); border-color: var(--accent); color: var(--accent); }
-button:disabled { opacity: 0.5; cursor: default; }
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--panel-3);
+  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.18);
+}
+button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+button.active {
+  background: rgba(var(--accent-rgb), 0.16);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.25);
+}
+button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
 
 input[type="text"], input[type="password"], input[type="datetime-local"], select {
   background: var(--panel-2);
@@ -121,8 +139,35 @@ input[type="text"], input[type="password"], input[type="datetime-local"], select
   padding: 7px 10px;
   font-size: 13px;
   min-width: 0; /* flex items default to a non-zero min-width and refuse to shrink otherwise */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
 input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
+
+/* The app doesn't use <input type="checkbox"> anywhere anymore — every
+   toggle (single or multi-select) is a button with an .active state and a
+   small dot indicator (see .view-menu-toggle in App.css), which reads much
+   more clearly at a glance than a checkbox ever did. This is just a sane
+   minimal fallback in case a real checkbox shows up in future code. */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  position: relative;
+  vertical-align: middle;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+input[type="checkbox"]:hover { border-color: var(--accent); }
+input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="checkbox"]:disabled { opacity: 0.5; cursor: default; }

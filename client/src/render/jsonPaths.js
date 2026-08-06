@@ -71,18 +71,32 @@ export function splitKeyPath(keyPath) {
   return keyPath.replace(/\[(\d+)\]/g, '.$1').split('.').filter((p) => p.length > 0);
 }
 
-// Used by extra columns: the stringified value at a dot-path, or '' when the
-// entry isn't JSON or simply doesn't have that key.
-export function getColumnValue(text, keyPath) {
+function resolveColumnRaw(text, keyPath) {
   const obj = resolveJsonObject(text);
-  if (!obj || typeof obj !== 'object') return '';
+  if (!obj || typeof obj !== 'object') return undefined;
   let cur = obj;
   for (const part of splitKeyPath(keyPath)) {
-    if (cur == null || typeof cur !== 'object') return '';
+    if (cur == null || typeof cur !== 'object') return undefined;
     cur = cur[part];
   }
+  return cur;
+}
+
+// Used by extra columns: the stringified value at a dot-path, or '' when the
+// entry isn't JSON or simply doesn't have that key. A column pointed at an
+// object/array (e.g. a folder added as a column from the fields sidebar)
+// gets the whole subtree JSON.stringify'd — see isColumnValueObject, which
+// tells the caller when that's what happened so it can be syntax-
+// highlighted the same way the raw message column is.
+export function getColumnValue(text, keyPath) {
+  const cur = resolveColumnRaw(text, keyPath);
   if (cur === undefined || cur === null) return '';
   return typeof cur === 'object' ? JSON.stringify(cur) : String(cur);
+}
+
+export function isColumnValueObject(text, keyPath) {
+  const cur = resolveColumnRaw(text, keyPath);
+  return cur !== undefined && cur !== null && typeof cur === 'object';
 }
 
 // Distinguishes "field missing" from "field present but null/undefined" —

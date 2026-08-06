@@ -5,13 +5,15 @@ import { ownTimestamp } from '../render/timestamp.js';
 import { LineRow } from './LineRow.jsx';
 import { LogHeader } from './LogHeader.jsx';
 import { FindBar } from './FindBar.jsx';
+import { ContextMenu } from './ContextMenu.jsx';
+import { useContextMenu } from '../hooks/useContextMenu.js';
 
 export const EntryView = forwardRef(function EntryView({
   buffer, ui, status, fontSize,
   toggleExpanded, togglePinned,
   extraColumns, onToggleColumn, onRemoveColumn,
   tsWidth, badgeWidth, extraColumnWidth, onResizeColumn,
-  findOpen, onCloseFind,
+  findOpen, onCloseFind, onSendToJsonLens,
 }, ref) {
   const { filterQuery, caseSensitive, autoscroll, paused, wrap, expandedSeqs, pinnedSeqs } = ui;
   const scrollRef = useRef(null);
@@ -21,6 +23,13 @@ export const EntryView = forwardRef(function EntryView({
   const [findQuery, setFindQuery] = useState('');
   const [findCaseSensitive, setFindCaseSensitive] = useState(false);
   const [findIndex, setFindIndex] = useState(0);
+
+  // One shared context menu for the whole list (not one per row) — see
+  // useContextMenu's isMenuActive for why: it keeps whichever row opened it
+  // looking hovered (background + actions bar) for as long as it's open,
+  // while suppressing real :hover on every other row.
+  const { menu, openMenu, closeMenu, isMenuActive } = useContextMenu();
+  const handleLineContextMenu = (e, seq, items) => openMenu(e, items, seq);
 
   if (!paused) pausedSnapshotRef.current = null;
   const effectiveBuffer = paused
@@ -149,7 +158,7 @@ export const EntryView = forwardRef(function EntryView({
             onClose={onCloseFind}
           />
         )}
-        <div className={`log ${wrap ? '' : 'no-wrap'}`} ref={scrollRef} style={{ fontSize: `${fontSize}px` }}>
+        <div className={`log ${wrap ? '' : 'no-wrap'} ${menu ? 'menu-open' : ''}`} ref={scrollRef} style={{ fontSize: `${fontSize}px` }}>
           {visible.length === 0 && (
             <div className="empty">{effectiveBuffer.length === 0 ? 'No lines yet.' : 'No lines match the current filter.'}</div>
           )}
@@ -181,6 +190,9 @@ export const EntryView = forwardRef(function EntryView({
                     tsWidth={tsWidth}
                     badgeWidth={badgeWidth}
                     extraColumnWidth={extraColumnWidth}
+                    onSendToJsonLens={onSendToJsonLens}
+                    onContextMenu={handleLineContextMenu}
+                    menuActive={isMenuActive(entry.seq)}
                   />
                 </div>
               );
@@ -188,6 +200,7 @@ export const EntryView = forwardRef(function EntryView({
           </div>
         </div>
       </div>
+      {menu && <ContextMenu {...menu} onClose={closeMenu} />}
     </div>
   );
 });

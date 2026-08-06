@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { FilePickerBody } from './FilePickerBody.jsx';
 import { RemoteQueryBody } from './RemoteQueryBody.jsx';
 
-export function TabPickerModal({ onOpenFile, onCreateRemote, onClose, recentFiles, onRemoveRecent }) {
-  const [mode, setMode] = useState('file'); // 'file' | 'api'
+export function TabPickerModal({ onOpenFile, onCreateRemote, onClose, recentFiles, onRemoveRecent, initialMode = 'file' }) {
+  const [mode, setMode] = useState(initialMode); // 'file' | 'api'
 
   return (
     <div className="modal-overlay" onClick={onClose}>

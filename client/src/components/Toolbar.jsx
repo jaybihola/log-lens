@@ -1,4 +1,6 @@
+import { Wand2, RefreshCw, Pause, Play, Trash2, Search, Bookmark, Settings2, MoreHorizontal } from 'lucide-react';
 import { Popover } from './Popover.jsx';
+import { Tooltip } from './Tooltip.jsx';
 import { PresetsMenu } from './PresetsMenu.jsx';
 import { MoreMenu } from './MoreMenu.jsx';
 import { FilterInput } from './FilterInput.jsx';
@@ -44,33 +46,50 @@ export function Toolbar({
           fields={indexFields}
         />
       )}
-      <button
-        type="button"
-        className={filterMode === 'visual' ? 'active' : ''}
-        title={filterMode === 'visual' ? 'Switch to text filter' : 'Switch to visual filter builder'}
-        onClick={onToggleFilterMode}
+      <Tooltip
+        label={filterMode === 'visual' ? 'Switch to text filter' : 'Visual filter builder'}
+        description={filterMode === 'visual' ? 'Edit the raw JQL text instead of the pill builder.' : 'Build your JQL filter with dropdowns and pills instead of typing it.'}
       >
-        ⚏
-      </button>
+        <button type="button" className={filterMode === 'visual' ? 'active icon-btn' : 'icon-btn'} onClick={onToggleFilterMode}>
+          <Wand2 size={15} strokeWidth={1.75} />
+        </button>
+      </Tooltip>
 
       {isApiTab && (
-        <button type="button" onClick={onFetch} disabled={fetching}>{fetching ? 'Fetching…' : 'Fetch new'}</button>
+        <Tooltip label={fetching ? 'Fetching…' : 'Fetch new'} description="Re-run this tab's query against the remote index.">
+          <button type="button" className="icon-btn" onClick={onFetch} disabled={fetching}>
+            <RefreshCw size={15} strokeWidth={1.75} className={fetching ? 'spin' : ''} />
+          </button>
+        </Tooltip>
       )}
 
-      <button
-        type="button"
-        className={paused ? 'active' : ''}
-        onClick={() => onChange({ paused: !paused })}
+      <Tooltip
+        label={paused ? 'Resume' : 'Pause'}
+        description={paused ? 'Start streaming new lines again.' : 'Stop new lines from streaming in while you inspect what\'s on screen.'}
       >
-        {paused ? 'Resume' : 'Pause'}
-      </button>
-      <button type="button" onClick={onClear}>Clear</button>
-      <button type="button" title="Find in view (⌘F / Ctrl+F)" onClick={onOpenFind}>Find</button>
+        <button type="button" className={paused ? 'active icon-btn' : 'icon-btn'} onClick={() => onChange({ paused: !paused })}>
+          {paused ? <Play size={15} strokeWidth={1.75} /> : <Pause size={15} strokeWidth={1.75} />}
+        </button>
+      </Tooltip>
+      <Tooltip label="Clear" description="Empty this tab's view (doesn't touch the source file or index).">
+        <button type="button" className="icon-btn" onClick={onClear}>
+          <Trash2 size={15} strokeWidth={1.75} />
+        </button>
+      </Tooltip>
+      <Tooltip label="Find in view" description="Highlight and step through matches without filtering anything out. (⌘F / Ctrl+F)">
+        <button type="button" className="icon-btn" onClick={onOpenFind}>
+          <Search size={15} strokeWidth={1.75} />
+        </button>
+      </Tooltip>
 
       <Popover
         align="right"
         trigger={(toggle, open) => (
-          <button type="button" className={open ? 'active' : ''} onClick={toggle}>Presets</button>
+          <Tooltip label="Presets" description="Save and reapply frequently-used JQL filters." disabled={open}>
+            <button type="button" className={open ? 'active icon-btn' : 'icon-btn'} onClick={toggle}>
+              <Bookmark size={15} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
         )}
       >
         {(close) => (
@@ -87,23 +106,39 @@ export function Toolbar({
       <Popover
         align="right"
         trigger={(toggle, open) => (
-          <button type="button" className={open ? 'active' : ''} onClick={toggle}>View ▾</button>
+          <Tooltip label="View options" description="Case sensitivity, line wrap, autoscroll, font size, and auto-refresh." disabled={open}>
+            <button type="button" className={open ? 'active icon-btn' : 'icon-btn'} onClick={toggle}>
+              <Settings2 size={15} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
         )}
       >
         <div className="view-menu">
-          <label className="view-menu-check">
-            <input type="checkbox" checked={caseSensitive} onChange={() => onChange({ caseSensitive: !caseSensitive })} />
-            Case-sensitive
-          </label>
-          <label className="view-menu-check">
-            <input type="checkbox" checked={wrap} onChange={() => onChange({ wrap: !wrap })} />
-            Wrap lines
-          </label>
+          <button
+            type="button"
+            className={caseSensitive ? 'view-menu-toggle active' : 'view-menu-toggle'}
+            onClick={() => onChange({ caseSensitive: !caseSensitive })}
+          >
+            <span>Case-sensitive</span>
+            <span className="view-menu-toggle-indicator" />
+          </button>
+          <button
+            type="button"
+            className={wrap ? 'view-menu-toggle active' : 'view-menu-toggle'}
+            onClick={() => onChange({ wrap: !wrap })}
+          >
+            <span>Wrap lines</span>
+            <span className="view-menu-toggle-indicator" />
+          </button>
           {!isApiTab && (
-            <label className="view-menu-check">
-              <input type="checkbox" checked={autoscroll} onChange={() => onChange({ autoscroll: !autoscroll })} />
-              Autoscroll
-            </label>
+            <button
+              type="button"
+              className={autoscroll ? 'view-menu-toggle active' : 'view-menu-toggle'}
+              onClick={() => onChange({ autoscroll: !autoscroll })}
+            >
+              <span>Autoscroll</span>
+              <span className="view-menu-toggle-indicator" />
+            </button>
           )}
           <div className="view-menu-divider" />
           <div className="view-menu-row">
@@ -131,7 +166,11 @@ export function Toolbar({
       <Popover
         align="right"
         trigger={(toggle, open) => (
-          <button type="button" className={open ? 'active' : ''} onClick={toggle}>⋯</button>
+          <Tooltip label="More" description="Pinned lines, jump to line, and this tab's extra columns." disabled={open}>
+            <button type="button" className={open ? 'active icon-btn' : 'icon-btn'} onClick={toggle}>
+              <MoreHorizontal size={15} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
         )}
       >
         <MoreMenu
