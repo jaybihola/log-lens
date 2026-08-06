@@ -307,8 +307,25 @@ body.col-resizing { cursor: col-resize; user-select: none; }
   font-family: monospace;
 }
 
-.fields-sidebar-controls { display: flex; align-items: center; gap: var(--space-1); padding: 0 var(--space-2-5) var(--space-2); }
+.fields-sidebar-controls { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2-5) var(--space-2-5) var(--space-2); }
 .fields-sidebar-controls .icon-btn { width: 24px; height: 24px; }
+
+/* A single icon-only button, alone in its own row with nothing else beside
+   it, read as an orphaned floating square — this gives it real presence: a
+   full-width row with its own label, bordered panel background, so it
+   reads as a deliberate primary action ("start here") instead of a stray
+   control. Used where the controls row has exactly one thing in it
+   (JSON Lens's folder sidebar has no search/view-toggle to sit alongside). */
+.sidebar-add-folder-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-3); font-size: var(--text-sm); font-weight: 600;
+  background: var(--panel-2); border: 1px dashed var(--border-strong); border-radius: 7px;
+  color: var(--dim);
+}
+.sidebar-add-folder-btn:hover:not(:disabled) {
+  color: var(--accent); border-color: var(--accent); border-style: solid;
+  background: rgba(var(--accent-rgb), 0.08);
+}
 
 .fields-sidebar-empty { padding: 0 14px; line-height: 1.5; }
 
@@ -329,7 +346,10 @@ body.col-resizing { cursor: col-resize; user-select: none; }
 
 .field-tree { display: flex; flex-direction: column; gap: 1px; }
 .field-tree-branch { display: flex; flex-direction: column; }
-.field-tree-folder-row { display: flex; align-items: center; gap: var(--space-1); border-radius: 5px; padding-right: var(--space-2); }
+.field-tree-folder-row {
+  display: flex; align-items: center; gap: var(--space-1); border-radius: 5px; padding-right: var(--space-2);
+  position: relative;
+}
 .fields-sidebar:not(.menu-open) .field-tree-folder-row:hover,
 .json-file-sidebar:not(.menu-open) .field-tree-folder-row:hover,
 .field-tree-folder-row.menu-target {
@@ -342,7 +362,7 @@ body.col-resizing { cursor: col-resize; user-select: none; }
 }
 .field-tree-folder {
   flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--space-1-5);
-  padding: var(--space-1-5) 0; border-radius: 5px; border: none; background: none; box-shadow: none;
+  padding: var(--space-2) 0; border-radius: 5px; border: none; background: none; box-shadow: none;
   color: var(--fg); text-align: left; cursor: pointer; font-size: var(--text-sm);
 }
 .field-tree-chevron { flex: 0 0 auto; color: var(--dim); transition: transform 0.12s; }
@@ -356,6 +376,15 @@ body.col-resizing { cursor: col-resize; user-select: none; }
 }
 .field-tree-folder-toggle:hover { background: rgba(var(--accent-rgb), 0.16); color: var(--accent); opacity: 1; }
 .field-tree-folder-toggle.active { color: var(--accent); opacity: 1; }
+
+/* One per ancestor level (see FieldTree.jsx's TreeGuides) — a thin vertical
+   line spanning the row's full height, so a deeply-nested row visually
+   traces back to its parent chain instead of relying on indentation alone.
+   Needs the row it's inside to be position:relative (folder rows already
+   are; JsonFileSidebar's/FieldsSidebar's leaf rows set it themselves). */
+.field-tree-guide {
+  position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border); pointer-events: none;
+}
 
 /* ---- generic decision modals (ConfirmModal / PromptModal) ---- */
 
