@@ -122,6 +122,14 @@ export function LineRow({
             {pinned ? 'Unpin' : 'Pin'}
           </button>
         </Tooltip>
+        {onSendToJsonLens && (
+          <Tooltip label="Open in JSON Lens" description="Send this line to a new JSON Lens tab.">
+            <button type="button" className="action-btn" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
+              <Braces size={13} strokeWidth={1.75} />
+              JSON Lens
+            </button>
+          </Tooltip>
+        )}
         <Tooltip label={expanded ? 'Show less' : 'Show more'} description="Open in a line-numbered, highlighted viewer.">
           <button
             type="button"
@@ -132,14 +140,6 @@ export function LineRow({
             {expanded ? 'Show less' : 'Show more'}
           </button>
         </Tooltip>
-        {onSendToJsonLens && (
-          <Tooltip label="Open in JSON Lens" description="Send this line to a new JSON Lens tab.">
-            <button type="button" className="action-btn" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
-              <Braces size={13} strokeWidth={1.75} />
-              JSON Lens
-            </button>
-          </Tooltip>
-        )}
       </div>
       {expanded && (
         <ExpandedDoc
