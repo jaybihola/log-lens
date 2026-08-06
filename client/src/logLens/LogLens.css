@@ -334,12 +334,14 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .line.flash { background: var(--flash) !important; transition: background 0.15s; }
 .pin-col {
   flex: 0 0 auto; width: 16px; margin-right: var(--space-1);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--dimmer); padding-top: 1px;
+  display: flex; align-items: center; justify-content: center; padding-top: 1px;
 }
-.pin-col:hover { color: var(--dim); }
-.pin-col.pinned { color: var(--warn); }
-.log-header .pin-col { width: 16px; margin-right: var(--space-1); cursor: default; color: transparent; }
+.pin-indicator {
+  width: 16px; height: 16px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  background: none; border: none; box-shadow: none; color: var(--warn); border-radius: var(--radius-sm);
+}
+.pin-indicator:hover { background: rgba(var(--warn-rgb), 0.16); }
+.log-header .pin-col { width: 16px; margin-right: var(--space-1); }
 .line .num {
   flex: 0 0 auto; width: 32px; text-align: right; margin-right: var(--space-1-5);
   color: var(--dim); user-select: none; white-space: nowrap; padding-top: 1px;
@@ -423,20 +425,21 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    of the message text. Collapsed to zero height until the row (or its menu)
    is active. */
 .actions {
-  display: flex; align-items: center; justify-content: flex-end; gap: 3px;
-  padding: 0 calc(var(--space-4-5) - 3px) 0 var(--space-4-5); max-height: 0; overflow: hidden; opacity: 0;
+  display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1-5);
+  padding: 0 var(--space-4-5); max-height: 0; overflow: hidden; opacity: 0;
   transition: max-height 0.12s, opacity 0.12s;
 }
 .log:not(.menu-open) .line-wrap:hover .actions,
 .line-wrap.menu-target .actions {
-  max-height: 30px; opacity: 1; padding-top: var(--space-1); padding-bottom: var(--space-1-5);
+  max-height: 34px; opacity: 1; padding-top: var(--space-1); padding-bottom: var(--space-1-5);
 }
 .action-btn {
-  flex: 0 0 auto; width: 24px; height: 24px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-sm); background: none; border: none; box-shadow: none; color: var(--dim);
+  flex: 0 0 auto; height: 24px; padding: 0 var(--space-2-5);
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border-radius: var(--radius-pill); background: none; border: none; box-shadow: none;
+  color: var(--dim); font-size: var(--text-xs); font-weight: 600; white-space: nowrap;
 }
-.action-btn:hover { background: var(--panel-3); color: var(--accent); }
+.action-btn:hover { background: var(--panel-3); color: var(--fg); }
 .action-btn.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.14); }
 .action-btn-chevron { transition: transform 0.12s; }
 .action-btn-chevron.expanded { transform: rotate(180deg); }
