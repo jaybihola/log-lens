@@ -40,11 +40,11 @@
    tooltip-only convention. */
 .json-mode-toggle {
   display: flex; align-items: center; gap: 2px; flex: 0 0 auto;
-  padding: 2px; border-radius: 7px; background: var(--panel-sunken);
+  padding: 2px; border-radius: var(--radius-md); background: var(--panel-sunken);
 }
 .json-mode-toggle .icon-btn {
   width: auto; height: 26px; padding: 0 var(--space-2-5);
-  display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 5px; border-radius: var(--radius-sm);
 }
 .json-mode-toggle-label { font-size: var(--text-sm); }
 .json-validation { font-size: var(--text-sm); font-family: monospace; color: var(--dim); }
@@ -64,7 +64,7 @@
 .json-find-bar {
   display: flex; align-items: center; gap: var(--space-1-5); flex: 0 0 auto;
   margin: var(--space-2) var(--space-3) 0; padding: var(--space-1-5) var(--space-2);
-  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-lg);
 }
 .json-find-bar-input { width: 320px; max-width: 100%; font-family: monospace; }
 .json-find-bar-count { min-width: 44px; text-align: center; color: var(--dim); font-size: var(--text-xs); font-family: monospace; }
@@ -83,7 +83,7 @@
 
 .json-table-view {
   flex: 1; min-width: 0; overflow: auto;
-  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-md);
 }
 .json-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-family: 'SF Mono', Consolas, monospace; }
 .json-table thead th {
@@ -126,7 +126,7 @@
 
 .json-field-chips-row {
   display: flex; align-items: center; gap: var(--space-2-5); flex-wrap: wrap;
-  padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--border); border-radius: 6px; background: var(--panel-2);
+  padding: var(--space-1-5) var(--space-2-5); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--panel-2);
 }
 .json-field-chips-label { font-size: var(--text-xs); color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; flex: 0 0 auto; }
 .json-field-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5); flex: 1; min-width: 0; }
@@ -136,7 +136,7 @@
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 70; width: 280px;
   display: flex; flex-direction: column; gap: var(--space-2);
   padding: var(--space-2-5); background: var(--panel-2);
-  border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow);
 }
 .json-field-picker-hint { font-size: var(--text-sm); color: var(--dim); margin: 0; }
 .json-field-picker-options { display: flex; flex-direction: column; gap: 5px; max-height: 220px; overflow-y: auto; padding: 2px; }
