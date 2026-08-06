@@ -36,7 +36,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     openNewTab, openInTab, activateTab, closeTab, closeOtherTabs, closeTabsToRight, fetchTab, clearActiveTab, updateActiveTabUi,
     toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, fetchActiveTab,
   } = useTabs();
-  const { fontSize, stepFontSize, histogramOpen, toggleHistogram } = useDisplaySettings();
+  const { fontSize, stepFontSize, histogramOpen, toggleHistogram, histogramIntervalMs, setHistogramInterval } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
   const { recentFiles, addRecent, removeRecent } = useRecentFiles();
   const { groups, saveGroup, renameGroup, removeGroup } = useTabGroups();
@@ -298,7 +298,15 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
             {activeTab.kind === 'api' && activeTab.fetchError && (
               <div className="api-error">{activeTab.fetchError}</div>
             )}
-            {histogramOpen && <TimeHistogram buffer={activeBuffer} ui={activeUi} />}
+            {histogramOpen && (
+              <TimeHistogram
+                buffer={activeBuffer}
+                ui={activeUi}
+                onChangeUi={updateActiveTabUi}
+                intervalMs={histogramIntervalMs}
+                onIntervalChange={setHistogramInterval}
+              />
+            )}
             <EntryView
               ref={entryViewRef}
               buffer={activeBuffer}
@@ -307,6 +315,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               fontSize={fontSize}
               toggleExpanded={toggleExpanded}
               togglePinned={togglePinned}
+              onChangeUi={updateActiveTabUi}
               extraColumns={activeUi.columns}
               onToggleColumn={toggleColumn}
               onRemoveColumn={removeColumn}
