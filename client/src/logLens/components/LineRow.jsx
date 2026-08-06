@@ -72,13 +72,15 @@ export function LineRow({
             </span>
           )}
         </span>
-        <span className="ts" style={{ width: tsWidth }}>{timestamp ? formatTimeShort(timestamp) : ''}</span>
+        <span className="ts" style={{ width: tsWidth }}>
+          {timestamp ? formatTimeShort(timestamp) : ''}
+          {gapMs != null && (
+            <span className="gap-flag" title={`${formatGap(gapMs)} since the previous shown line (an outlier gap for this view)`}>
+              +{formatGap(gapMs)}
+            </span>
+          )}
+        </span>
         <span className={`badge ${lvlClass}`} style={{ width: badgeWidth }}>{LEVEL_LABELS[lvlClass] || 'INFO'}</span>
-        {gapMs != null && (
-          <span className="gap-flag" title={`${formatGap(gapMs)} since the previous shown line (an outlier gap for this view)`}>
-            +{formatGap(gapMs)}
-          </span>
-        )}
         {columns.map((key) => {
           const value = getColumnValue(entry.text, key);
           const isObj = isColumnValueObject(entry.text, key);
