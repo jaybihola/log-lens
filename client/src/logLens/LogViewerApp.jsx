@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PanelLeft, Settings, Moon, Sun, HelpCircle, ScrollText, FileText, Radio, Clock, Layers } from 'lucide-react';
+import { PanelLeft, Settings, Moon, Sun, HelpCircle, ScrollText, FileText, Radio, Clock, Layers, Command } from 'lucide-react';
+import { CommandBar } from '../shared/components/CommandBar.jsx';
+import { useCommandBar } from '../shared/hooks/useCommandBar.js';
 import { useTabs } from './hooks/useTabs.js';
 import { useDisplaySettings } from './hooks/useDisplaySettings.js';
 import { usePresets } from './hooks/usePresets.js';
@@ -44,6 +46,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   const { theme, setTheme, toggleTheme } = useTheme();
   const { sidebarOpen, toggleSidebar, sidebarWidth, resizeSidebar } = useFieldsSidebar();
   const { filterMode, toggleFilterMode } = useFilterMode();
+  const [commandBarOpen, setCommandBarOpen] = useCommandBar(active);
 
   // Background-tab attention: flash the browser tab title while any Log
   // Lens tab has unseen error/warn lines (see useTabs.js/TabBar.jsx for the
@@ -126,6 +129,71 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     filterInputRef.current?.focus();
   };
 
+  // ⌘K command bar — every command here is a thin wrapper around a handler
+  // that already exists for some button/popover elsewhere in this file, so
+  // there's exactly one source of truth per action. Entries whose action
+  // wouldn't currently apply (no tab open, wrong tab kind, etc.) are left
+  // out entirely rather than shown disabled, matching how the real toolbar
+  // already hides e.g. Fetch on a non-remote-query tab.
+  const commands = useMemo(() => {
+    const list = [
+      { id: 'open-file', label: 'Open file…', group: 'Tabs', keywords: 'open new tail', onRun: () => openPicker('file') },
+      { id: 'open-remote', label: 'Remote query…', group: 'Tabs', keywords: 'open new elasticsearch opensearch', onRun: () => openPicker('api') },
+    ];
+    tabMetaList.filter((t) => t.id !== activeTabId).forEach((t) => {
+      const label = t.kind === 'api' ? (t.environment || 'remote query') : basename(t.file || 'log');
+      list.push({ id: `switch-${t.id}`, label: `Switch to: ${label}`, group: 'Tabs', onRun: () => activateTab(t.id) });
+    });
+    if (activeTab) {
+      list.push({ id: 'close-tab', label: 'Close current tab', group: 'Tabs', onRun: () => closeTab(activeTab.id) });
+    }
+
+    list.push(
+      { id: 'toggle-sidebar', label: sidebarOpen ? 'Hide fields sidebar' : 'Show fields sidebar', group: 'View', onRun: toggleSidebar },
+      { id: 'toggle-theme', label: `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`, group: 'View', onRun: toggleTheme },
+      { id: 'preferences', label: 'Preferences…', group: 'View', keywords: 'settings environments credentials', onRun: () => setModal('preferences') },
+    );
+    if (activeTab) {
+      list.push(
+        { id: 'toggle-histogram', label: histogramOpen ? 'Hide time histogram' : 'Show time histogram', group: 'View', onRun: toggleHistogram },
+        { id: 'toggle-filter-mode', label: filterMode === 'visual' ? 'Switch to text filter' : 'Visual filter builder', group: 'View', onRun: toggleFilterMode },
+      );
+    }
+
+    if (activeTab) {
+      if (activeTab.kind === 'api') {
+        list.push({ id: 'fetch', label: 'Fetch new', group: 'Log', keywords: 'refresh reload run query', onRun: handleFetch });
+      } else {
+        list.push({ id: 'toggle-autoscroll', label: activeUi.autoscroll ? 'Disable autoscroll' : 'Enable autoscroll', group: 'Log', onRun: () => updateActiveTabUi({ autoscroll: !activeUi.autoscroll }) });
+      }
+      list.push(
+        { id: 'toggle-pause', label: activeUi.paused ? 'Resume tailing' : 'Pause tailing', group: 'Log', onRun: () => updateActiveTabUi({ paused: !activeUi.paused }) },
+        { id: 'clear', label: 'Clear view', group: 'Log', onRun: clearActiveTab },
+        { id: 'find', label: 'Find in view', group: 'Log', shortcut: '⌘F', onRun: () => setFindOpen(true) },
+        { id: 'toggle-case', label: activeUi.caseSensitive ? 'Disable case-sensitive filter' : 'Enable case-sensitive filter', group: 'Log', onRun: () => updateActiveTabUi({ caseSensitive: !activeUi.caseSensitive }) },
+        { id: 'toggle-wrap', label: activeUi.wrap ? 'Disable line wrap' : 'Enable line wrap', group: 'Log', onRun: () => updateActiveTabUi({ wrap: !activeUi.wrap }) },
+        { id: 'font-up', label: 'Increase font size', group: 'Log', onRun: () => stepFontSize(0.5) },
+        { id: 'font-down', label: 'Decrease font size', group: 'Log', onRun: () => stepFontSize(-0.5) },
+      );
+    }
+
+    if (activeTab && presets.length) {
+      presets.forEach((p) => {
+        list.push({ id: `preset-${p.name}`, label: `Apply preset: ${p.name}`, group: 'Presets', keywords: p.query, onRun: () => updateActiveTabUi({ filterQuery: p.query }) });
+      });
+    }
+    if (groups.length) {
+      groups.forEach((g) => {
+        list.push({ id: `group-${g.name}`, label: `Open tab group: ${g.name}`, group: 'Tab groups', onRun: () => handleFilesOpen(g.paths) });
+      });
+    }
+    return list;
+  }, [
+    tabMetaList, activeTabId, activeTab, sidebarOpen, theme, histogramOpen, filterMode, activeUi,
+    presets, groups, openPicker, activateTab, closeTab, toggleSidebar, toggleTheme, toggleHistogram,
+    toggleFilterMode, handleFetch, clearActiveTab, updateActiveTabUi, stepFontSize, handleFilesOpen,
+  ]);
+
   // Auto-refresh for remote query tabs — re-triggers "Fetch new" on an
   // interval instead of requiring a manual click every time. Off (0) by
   // default; resets whenever the active tab or the chosen interval changes.
@@ -202,6 +270,11 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
           getLastLineAt={getLastLineAt}
         />
         <div className="app-header-actions">
+          <Tooltip label="Command bar" description="Search and run any action by typing. (⌘K)">
+            <button type="button" className="icon-btn" onClick={() => setCommandBarOpen(true)}>
+              <Command size={16} strokeWidth={1.75} />
+            </button>
+          </Tooltip>
           <Popover
             align="right"
             trigger={(toggle, open) => (
@@ -369,6 +442,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
       {modal === 'preferences' && (
         <PreferencesModal onClose={closeModal} theme={theme} onSetTheme={setTheme} />
       )}
+      <CommandBar open={commandBarOpen} onClose={() => setCommandBarOpen(false)} commands={commands} />
     </div>
   );
 }
