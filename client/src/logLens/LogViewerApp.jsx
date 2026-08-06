@@ -17,6 +17,7 @@ import { HelpPanel } from './components/HelpPanel.jsx';
 import { Popover } from '../shared/components/Popover.jsx';
 import { Tooltip } from '../shared/components/Tooltip.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
+import { TimeHistogram } from './components/TimeHistogram.jsx';
 import { EntryView } from './components/EntryView.jsx';
 import { FieldsSidebar } from './components/FieldsSidebar.jsx';
 import { EmptyState } from '../shared/components/EmptyState.jsx';
@@ -32,7 +33,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     openNewTab, openInTab, activateTab, closeTab, closeOtherTabs, closeTabsToRight, fetchTab, clearActiveTab, updateActiveTabUi,
     toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, fetchActiveTab,
   } = useTabs();
-  const { fontSize, stepFontSize } = useDisplaySettings();
+  const { fontSize, stepFontSize, histogramOpen, toggleHistogram } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
   const { recentFiles, addRecent, removeRecent } = useRecentFiles();
   const { tsWidth, badgeWidth, extraColumnWidth, setColumnWidth } = useColumnWidths();
@@ -240,10 +241,13 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               filterMode={filterMode}
               onToggleFilterMode={toggleFilterMode}
               onOpenFind={() => setFindOpen(true)}
+              histogramOpen={histogramOpen}
+              onToggleHistogram={toggleHistogram}
             />
             {activeTab.kind === 'api' && activeTab.fetchError && (
               <div className="api-error">{activeTab.fetchError}</div>
             )}
+            {histogramOpen && <TimeHistogram buffer={activeBuffer} ui={activeUi} />}
             <EntryView
               ref={entryViewRef}
               buffer={activeBuffer}

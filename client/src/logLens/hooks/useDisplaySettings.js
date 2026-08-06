@@ -9,9 +9,12 @@ function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     const fontSize = Number(raw.fontSize);
-    return { fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE };
+    return {
+      fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE,
+      histogramOpen: raw.histogramOpen === true,
+    };
   } catch {
-    return { fontSize: DEFAULT_FONT_SIZE };
+    return { fontSize: DEFAULT_FONT_SIZE, histogramOpen: false };
   }
 }
 
@@ -33,5 +36,9 @@ export function useDisplaySettings() {
     }));
   }, []);
 
-  return { ...settings, stepFontSize };
+  const toggleHistogram = useCallback(() => {
+    setSettings((prev) => ({ ...prev, histogramOpen: !prev.histogramOpen }));
+  }, []);
+
+  return { ...settings, stepFontSize, toggleHistogram };
 }

@@ -17,6 +17,7 @@ just a map.
 | `FilterInput.jsx` | The text-mode JQL box, with field-name autocomplete for remote-query tabs |
 | `VisualFilterBuilder.jsx` | The pill-based visual filter builder — reads/writes the same query string as `FilterInput` |
 | `FilterClauseEditor.jsx` | Add/edit form for one visual-filter pill (field, operator, value(s), AND/OR placement) |
+| `TimeHistogram.jsx` | Collapsible, display-only log-volume-over-time strip — buckets the currently filtered/on-screen buffer by `render/timestamp.js`'s `ownTimestamp`; no drag-select/click-to-filter, toggled from Toolbar's view-options menu |
 | `EntryView.jsx` | The virtualized log line list — owns find-in-view state and the shared context-menu instance |
 | `LineRow.jsx` | One log line — highlighting, pin/expand/context-menu, the hover action bar |
 | `ExpandedDoc.jsx` | A line's "Show more" panel — Table (`FieldTable`) / JSON (`CodeViewer`) tabs |
@@ -45,7 +46,7 @@ just a map.
 | `usePresets.js` | Named, saved JQL queries, localStorage |
 | `useRecentFiles.js` | Last 8 opened file paths, localStorage |
 | `useColumnWidths.js` | Drag-resized timestamp/level/extra-column widths, localStorage |
-| `useDisplaySettings.js` | The log view's font size, localStorage |
+| `useDisplaySettings.js` | The log view's font size and the time histogram's open/closed state, localStorage |
 
 ## `filter/` — the JQL grammar (full reference: `docs/JQL.md`)
 
@@ -63,6 +64,7 @@ error }` shape the rest of the app consumes, fail-open on a parse error) → `vi
 | `fieldStats.js` | A field's value distribution, computed from what's already buffered client-side |
 | `pairing.js` | Console/JSON log-pair detection — **built but not currently wired up**, see `docs/ROADMAP.md` |
 | `timestamp.js` | Timestamp extraction/formatting, jump-to-line/time resolution |
+| `timeHistogram.js` | Buckets a set of entries by `timestamp.js`'s `ownTimestamp` into equal-width time slices for `components/TimeHistogram.jsx`'s density strip; entries with no resolvable timestamp are excluded but counted separately |
 
 ## `api/`
 
