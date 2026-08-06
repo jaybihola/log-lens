@@ -4,14 +4,16 @@ import { compileQuery } from '../filter/compile.js';
 import { computeTimeHistogram } from '../render/timeHistogram.js';
 import { formatTimeShort } from '../render/timestamp.js';
 
-// Display-only log-volume-over-time strip — bucket the currently
+const LEVEL_ORDER = ['lvl-error', 'lvl-warn', 'lvl-info', 'lvl-debug'];
+
+// Log-volume-over-time strip, stacked by log level — bucket the currently
 // filtered/on-screen entries (not the raw unfiltered buffer, and never more
 // than what's buffered client-side — see the caption) so a burst of activity
-// is visible at a glance. Deliberately no drag-to-select / click-to-filter;
-// just the visual. Mirrors EntryView's own pause-freeze behavior (a paused
-// tab keeps showing the snapshot it paused on, not lines that kept arriving
-// underneath it) so the strip never disagrees with what's actually on
-// screen.
+// (and what kind) is visible at a glance. Deliberately no drag-to-select /
+// click-to-filter yet; just the visual. Mirrors EntryView's own pause-freeze
+// behavior (a paused tab keeps showing the snapshot it paused on, not lines
+// that kept arriving underneath it) so the strip never disagrees with what's
+// actually on screen.
 export function TimeHistogram({ buffer, ui }) {
   const { filterQuery, caseSensitive, paused } = ui;
   const pausedSnapshotRef = useRef(null);
@@ -51,7 +53,11 @@ export function TimeHistogram({ buffer, ui }) {
               className="time-histogram-bar"
               title={`${b.count} line${b.count === 1 ? '' : 's'} · ${range}`}
             >
-              <div className="time-histogram-bar-fill" style={{ height: `${heightPct}%` }} />
+              <div className="time-histogram-bar-fill" style={{ height: `${heightPct}%` }}>
+                {LEVEL_ORDER.map((lvl) => (
+                  b.byLevel[lvl] > 0 && <div key={lvl} className={`time-histogram-seg ${lvl}`} style={{ flex: `${b.byLevel[lvl]} 0 0` }} />
+                ))}
+              </div>
             </div>
           );
         })}
