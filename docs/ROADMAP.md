@@ -64,8 +64,15 @@ no such prior spec; they're native to this codebase.
 - Full CodeMirror editor: undo/redo, find/replace, fold all/unfold all, go-to-line, zoom
   (persisted font size), inline lint diagnostics (JSON parse errors anchored at the exact bad
   token, plus duplicate-object-key warnings computed from the real syntax tree).
+- **Edit / View mode** — an explicit per-tab mode boundary (not just a side effect of field
+  selection): Edit is the full toolbar and a freely editable document with no field-filter UI in
+  the way; View is read-only with a decluttered toolbar (Copy/Download/Wrap/Fold/Zoom/Find/Go to
+  line only) and is where field-filtering becomes available. View has two sub-modes — **Code**
+  (the same read-only CodeMirror rendering) and **Table** (`components/JsonTableView.jsx`, a real
+  key/type/value table with nested objects/arrays expandable in place, not just highlighted text).
 - Field-filtering: fuzzy-search a field name, disambiguate via a picker when it's ambiguous, view
-  just the selected fields (read-only) with the rest pruned but ancestor paths kept for context.
+  just the selected fields (read-only, View mode only) with the rest pruned but ancestor paths kept
+  for context.
 - Format / Minify / Sort keys / Escape (wrap as a JSON string literal) / Unescape / indent
   selection / wrap toggle / copy / download / import-from-disk (native file input) / clear.
 - No forced "must always have a tab open" — closing the last tab (or starting fresh) shows a

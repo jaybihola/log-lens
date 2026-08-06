@@ -28,6 +28,15 @@
   padding: 10px 12px; background: var(--panel); border-bottom: 1px solid var(--border);
 }
 .json-toolbar-divider { width: 1px; height: 20px; background: var(--border); flex: 0 0 auto; margin: 0 2px; }
+
+/* Edit/View mode toggle + View's Code/Table sub-mode toggle — both use the
+   same pill-group look, distinct from the plain icon-btn row around them. */
+.json-mode-toggle {
+  display: flex; align-items: center; gap: 2px; flex: 0 0 auto;
+  padding: 2px; border-radius: 7px; background: var(--panel-sunken);
+}
+.json-mode-toggle .icon-btn { display: flex; align-items: center; gap: 5px; border-radius: 5px; }
+.json-mode-toggle-label { font-size: 11.5px; }
 .json-validation { font-size: 12px; font-family: monospace; color: var(--dim); }
 .json-validation.ok { color: var(--info); }
 .json-validation.error { color: var(--error); }
@@ -35,6 +44,42 @@
 .json-editor-body { flex: 1; min-height: 0; padding: 10px 12px; display: flex; }
 .json-editor-body .json-editor { flex: 1; min-width: 0; }
 .json-editor-body .cm-editor { height: 100%; }
+
+/* ---- View mode, table sub-view (JsonTableView.jsx) ---- */
+
+.json-table-view {
+  flex: 1; min-width: 0; overflow: auto;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+}
+.json-table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'SF Mono', Consolas, monospace; }
+.json-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  text-align: left; font-family: system-ui, sans-serif; font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.03em; color: var(--dim); background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: 6px 10px;
+}
+.json-table-row:hover { background: var(--panel-3); }
+.json-table-row td { border-bottom: 1px solid var(--border); padding: 4px 10px; vertical-align: top; }
+.json-table-key-cell { white-space: nowrap; }
+.json-table-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; padding: 0; margin-right: 2px; border: none; background: none;
+  color: var(--dim); cursor: pointer; vertical-align: middle;
+}
+.json-table-toggle:hover { color: var(--fg); }
+.json-table-toggle-spacer { display: inline-block; width: 18px; }
+.json-table-chevron { transition: transform 0.1s ease; }
+.json-table-chevron.expanded { transform: rotate(90deg); }
+.json-table-key { color: var(--syntax-key); }
+.json-table-type-cell { white-space: nowrap; }
+.json-table-type { font-size: 10px; text-transform: uppercase; letter-spacing: 0.02em; color: var(--dim); }
+.json-table-value-cell { width: 100%; word-break: break-word; }
+.json-table-preview { color: var(--dim); font-style: italic; }
+.json-table-scalar-string { color: var(--syntax-string); }
+.json-table-scalar-number { color: var(--syntax-number); }
+.json-table-scalar-boolean, .json-table-scalar-null { color: var(--syntax-bool); }
+.json-table-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: 13px; }
+.json-table-error { color: var(--error); }
 
 .json-field-filter {
   display: flex; flex-direction: column; gap: 6px;
