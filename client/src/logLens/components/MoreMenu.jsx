@@ -1,18 +1,53 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Copy, Download } from 'lucide-react';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
+import { compileQuery } from '../filter/compile.js';
 
 export function MoreMenu({
   pinnedSeqs, buffer, onJumpToSeq, onUnpin, onJumpQuery,
   columns, onAddColumn, onRemoveColumn,
+  ui, tabLabel,
 }) {
   const [jumpValue, setJumpValue] = useState('');
   const [jumpError, setJumpError] = useState(null);
   const [columnPath, setColumnPath] = useState('');
+  const [copied, setCopied] = useState(false);
   const { menu, openMenu, closeMenu } = useContextMenu();
 
   const bySeq = new Map(buffer.map((e) => [e.seq, e]));
   const pinned = [...pinnedSeqs].sort((a, b) => a - b);
+
+  // Same "what's actually on screen" computation EntryView.jsx and
+  // TimeHistogram.jsx use — its own frozen snapshot while paused (the
+  // buffer keeps growing underneath a paused tab; EntryView just stops
+  // rendering the new lines), then the same filter query/case-sensitivity.
+  const pausedSnapshotRef = useRef(null);
+  if (!ui.paused) pausedSnapshotRef.current = null;
+  const effectiveBuffer = ui.paused ? (pausedSnapshotRef.current ??= buffer) : buffer;
+  const compiled = useMemo(() => compileQuery(ui.filterQuery, { caseSensitive: ui.caseSensitive }), [ui.filterQuery, ui.caseSensitive]);
+  const queryActive = ui.filterQuery.trim().length > 0;
+  const visibleLines = useMemo(() => (
+    queryActive ? effectiveBuffer.filter((e) => compiled.matcher(e.text)) : effectiveBuffer
+  ), [effectiveBuffer, compiled, queryActive]);
+
+  const copyVisible = async () => {
+    try {
+      await navigator.clipboard.writeText(visibleLines.map((e) => e.text).join('\n'));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch { /* clipboard unavailable/denied — nothing more to do */ }
+  };
+
+  const downloadVisible = () => {
+    const blob = new Blob([visibleLines.map((e) => e.text).join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${tabLabel || 'log-lens'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const go = () => {
     const found = onJumpQuery(jumpValue);
@@ -46,6 +81,21 @@ export function MoreMenu({
 
   return (
     <div className="more-menu">
+      <div className="more-menu-section">
+        <label>Export ({visibleLines.length} visible line{visibleLines.length === 1 ? '' : 's'})</label>
+        <div className="more-menu-export-row">
+          <button type="button" onClick={copyVisible} disabled={!visibleLines.length}>
+            <Copy size={13} strokeWidth={1.75} />
+            {copied ? 'Copied!' : 'Copy all visible lines'}
+          </button>
+          <button type="button" onClick={downloadVisible} disabled={!visibleLines.length}>
+            <Download size={13} strokeWidth={1.75} />
+            Download as .txt
+          </button>
+        </div>
+      </div>
+
+      <div className="view-menu-divider" />
       <div className="more-menu-section">
         <label>Pinned lines ({pinned.length})</label>
         {pinned.length === 0 ? (

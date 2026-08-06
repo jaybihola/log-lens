@@ -16,7 +16,7 @@ usage before moving on, not just the one that motivated the change.
 | `ConfirmModal.jsx` | Generic "are you sure" dialog with caller-supplied action buttons |
 | `PromptModal.jsx` | Generic single-text-input dialog |
 | `Popover.jsx` | Lightweight anchored dropdown (not a centered modal) — view-option menus, quick lists |
-| `FilePickerBody.jsx` | Directory-browsing UI; `mode` picks open-file / choose-folder / save-file |
+| `FilePickerBody.jsx` | Directory-browsing UI; `mode` picks open-file / choose-folder / save-file. Opt-in `multiple` (default off) adds per-file checkboxes + an "Open N selected" action in open-file mode, calling `onOpenMultiple(paths)` — Log Lens's file picker turns it on, JSON Lens's single-file callers are untouched |
 | `EmptyState.jsx` | The "nothing open" full-pane screen (icon, title, actions, optional quick list) |
 | `JsonEditor.jsx` | The CodeMirror 6 wrapper — full-document JSON/XML/text editing, JSON lint |
 | `CopyButton.jsx` | A button that copies text and flashes "Copied!" |

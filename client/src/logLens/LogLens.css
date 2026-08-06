@@ -9,6 +9,20 @@
 .status-dot.status-waiting { background: var(--dim); }
 .status-dot.status-error { background: var(--error); }
 
+/* ---- tab bar: background-tab attention badge + quiet-tail indicator ---- */
+
+.tab.has-attention:not(.active) { border-color: rgba(var(--error-rgb), 0.6); }
+.tab-attention {
+  display: inline-flex; align-items: center; gap: 2px;
+  color: var(--error); font-size: 10.5px; font-weight: 700; flex: 0 0 auto;
+}
+.tab-quiet {
+  display: inline-flex; align-items: center; gap: 3px;
+  color: var(--dim); font-size: 10.5px; opacity: 0.8; flex: 0 0 auto;
+  cursor: pointer; white-space: nowrap;
+}
+.tab-quiet:hover { color: var(--fg); opacity: 1; }
+
 /* ---- toolbar ---- */
 
 .toolbar {
@@ -305,6 +319,14 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .badge.lvl-info { background: rgba(var(--info-rgb), 0.14); color: var(--info); }
 .badge.lvl-debug { background: rgba(var(--debug-rgb), 0.14); color: var(--debug); }
 
+/* ---- per-line outlier time-gap flag — only rendered for gaps EntryView's
+   outlierGapThreshold flags, not on every line; see EntryView.jsx ---- */
+.gap-flag {
+  flex: 0 0 auto; font-size: 10px; font-family: monospace; color: var(--warn);
+  background: rgba(var(--warn-rgb), 0.12); border-radius: 3px; padding: 1px 5px;
+  margin-right: 8px; margin-top: 1px; white-space: nowrap;
+}
+
 .line.lvl-warn .text { color: var(--warn); }
 .line-wrap.lvl-error { border-left-color: var(--error); }
 .line.lvl-error .text { color: var(--error); }
@@ -456,6 +478,8 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .more-menu { width: 320px; display: flex; flex-direction: column; gap: 4px; }
 .more-menu-section { display: flex; flex-direction: column; gap: 6px; padding: 4px 2px; }
 .more-menu-section > label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; }
+.more-menu-export-row { display: flex; gap: 6px; }
+.more-menu-export-row button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; }
 
 .pinned-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
 .pinned-item {

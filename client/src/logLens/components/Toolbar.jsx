@@ -24,6 +24,7 @@ export function Toolbar({
   filterMode, onToggleFilterMode,
   onOpenFind,
   histogramOpen, onToggleHistogram,
+  tabLabel,
 }) {
   const {
     filterQuery, caseSensitive, autoscroll, paused, wrap, autoRefreshSec,
@@ -191,6 +192,8 @@ export function Toolbar({
           columns={columns}
           onAddColumn={onAddColumn}
           onRemoveColumn={onRemoveColumn}
+          ui={ui}
+          tabLabel={tabLabel}
         />
       </Popover>
     </div>

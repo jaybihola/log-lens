@@ -29,6 +29,43 @@ export function computeTimestamps(lines, pairs) {
   return map;
 }
 
+// ownTimestamp's plain-text form is space-separated ("YYYY-MM-DD HH:mm:ss");
+// Date.parse's handling of that exact shape isn't guaranteed across engines,
+// so normalize to ISO's "T" separator before parsing. Shared by the time
+// histogram's bucketing and per-line gap detection below, so both agree on
+// what "the same instant" means.
+export function parseTimestampMs(ts) {
+  const iso = ts.includes(' ') && !ts.includes('T') ? ts.replace(' ', 'T') : ts;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+const MIN_GAP_MS = 3000; // never flag anything under 3s, regardless of typical spacing
+
+// An "outlier" gap combines that fixed floor with a multiple of the visible
+// set's own median gap, so a normally-bursty log's routine spacing doesn't
+// get flagged just because one particular stretch was quieter, and a
+// normally-quiet log's routine multi-second gaps don't get lost against a
+// floor tuned for busier logs.
+export function outlierGapThreshold(gapsMs) {
+  if (!gapsMs.length) return Infinity;
+  const sorted = [...gapsMs].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  return Math.max(MIN_GAP_MS, median * 6);
+}
+
+export function formatGap(ms) {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const totalSec = ms / 1000;
+  if (totalSec < 60) return `${totalSec < 10 ? totalSec.toFixed(1) : Math.round(totalSec)}s`;
+  const totalMin = Math.floor(totalSec / 60);
+  const remSec = Math.round(totalSec - totalMin * 60);
+  if (totalMin < 60) return remSec ? `${totalMin}m ${remSec}s` : `${totalMin}m`;
+  const hours = Math.floor(totalMin / 60);
+  const remMin = totalMin - hours * 60;
+  return remMin ? `${hours}h ${remMin}m` : `${hours}h`;
+}
+
 export function formatTimeShort(iso) {
   const m = /(\d{2}:\d{2}:\d{2})(?:\.(\d+))?/.exec(iso);
   if (!m) return iso;
