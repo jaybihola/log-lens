@@ -423,15 +423,23 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    of the message text. Collapsed to zero height until the row (or its menu)
    is active. */
 .actions {
-  display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1);
-  padding: 0 var(--space-4-5); max-height: 0; overflow: hidden; opacity: 0;
-  transition: max-height 0.1s, opacity 0.1s;
+  display: flex; align-items: center; justify-content: flex-end; gap: 3px;
+  padding: 0 calc(var(--space-4-5) - 3px) 0 var(--space-4-5); max-height: 0; overflow: hidden; opacity: 0;
+  transition: max-height 0.12s, opacity 0.12s;
 }
 .log:not(.menu-open) .line-wrap:hover .actions,
 .line-wrap.menu-target .actions {
-  max-height: 24px; opacity: 1; padding: 3px var(--space-4-5);
+  max-height: 30px; opacity: 1; padding-top: var(--space-1); padding-bottom: var(--space-1-5);
 }
-.actions button { font-size: var(--text-xs); padding: 2px 7px; }
+.action-btn {
+  flex: 0 0 auto; width: 24px; height: 24px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); background: none; border: none; box-shadow: none; color: var(--dim);
+}
+.action-btn:hover { background: var(--panel-3); color: var(--accent); }
+.action-btn.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.14); }
+.action-btn-chevron { transition: transform 0.12s; }
+.action-btn-chevron.expanded { transform: rotate(180deg); }
 
 /* ---- expanded doc / field table ---- */
 

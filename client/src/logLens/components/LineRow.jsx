@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { ChevronDown, Braces } from 'lucide-react';
 import { detectAndHighlight, applyTermHits, highlightJson, tryFormatJson, visibleLength, truncateHtmlToVisibleChars, levelClass, LEVEL_LABELS, LONG_LINE_THRESHOLD } from '../render/highlight.js';
 import { formatTimeShort, formatGap } from '../render/timestamp.js';
 import { getColumnValue, isColumnValueObject } from '../render/jsonPaths.js';
@@ -100,16 +101,26 @@ export function LineRow({
         <span className="text" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
       <div className="actions">
-        <CopyButton text={entry.text} title="Copy this line's raw text" />
-        <Tooltip label="View this line" description="Open in a line-numbered, highlighted viewer.">
-          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}>
-            {expanded ? 'Show less' : 'Show more'}
+        <CopyButton
+          text={entry.text}
+          title="Copy line"
+          description="Copy this line's raw text."
+          className="action-btn"
+          icon
+        />
+        <Tooltip label={expanded ? 'Show less' : 'Show more'} description="Open in a line-numbered, highlighted viewer.">
+          <button
+            type="button"
+            className={expanded ? 'action-btn active' : 'action-btn'}
+            onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}
+          >
+            <ChevronDown size={14} strokeWidth={1.75} className={expanded ? 'action-btn-chevron expanded' : 'action-btn-chevron'} />
           </button>
         </Tooltip>
         {onSendToJsonLens && (
           <Tooltip label="Open in JSON Lens" description="Send this line to a new JSON Lens tab.">
-            <button type="button" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
-              JSON Lens
+            <button type="button" className="action-btn" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
+              <Braces size={14} strokeWidth={1.75} />
             </button>
           </Tooltip>
         )}

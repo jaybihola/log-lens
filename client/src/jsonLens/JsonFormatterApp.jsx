@@ -513,6 +513,11 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
     <div className="app">
       <header className="app-header">
         <span className="app-title">JSON Lens</span>
+        <Tooltip label="Files sidebar" description="Browse opened folders and saved scratches.">
+          <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
+            <PanelLeft size={16} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
         <JsonTabBar
           tabs={tabs}
           activeTabId={activeTabId}
@@ -529,11 +534,6 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
           <Tooltip label="Command bar" description="Search and run any action by typing. (⌘K)">
             <button type="button" className="icon-btn" onClick={() => setCommandBarOpen(true)}>
               <Command size={16} strokeWidth={1.75} />
-            </button>
-          </Tooltip>
-          <Tooltip label="Files sidebar" description="Browse opened folders and saved scratches.">
-            <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
-              <PanelLeft size={16} strokeWidth={1.75} />
             </button>
           </Tooltip>
         </div>
