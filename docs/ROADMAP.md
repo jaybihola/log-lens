@@ -49,6 +49,12 @@ no such prior spec; they're native to this codebase.
   presets/pinned lines/column headers.
 - **Send to JSON Lens** — a line's context menu can hand its (pretty-printed, if parseable)
   content straight to a new JSON Lens tab.
+- **Time histogram** — a collapsible, display-only bar strip (Toolbar's view-options menu toggles
+  it) showing log volume over time, bucketed from `ownTimestamp` on whatever's currently
+  filtered/on-screen (not the raw buffer), so a burst of activity is visible at a glance. Live-
+  updating with streamed lines and filter changes, freezes in step with the tab's own Pause, and
+  makes its buffered-lines-only scope explicit rather than implying full-file coverage.
+  Deliberately no drag-to-select/click-to-filter in this pass — display only.
 
 ## Done — JSON Lens
 

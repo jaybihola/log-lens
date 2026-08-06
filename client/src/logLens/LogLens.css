@@ -145,6 +145,59 @@
 .jql-error { color: var(--error); font-family: monospace; }
 .paused-hint { color: var(--warn); font-weight: 700; }
 
+/* ---- time histogram: display-only log-volume-over-time strip, no
+   drag-select/click-to-filter — see components/TimeHistogram.jsx ---- */
+
+.time-histogram {
+  flex: 0 0 auto;
+  padding: 8px 18px 6px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.time-histogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 40px;
+}
+.time-histogram-bar {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 1px;
+  cursor: default;
+}
+.time-histogram-bar-fill {
+  width: 100%;
+  min-height: 0;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+  opacity: 0.75;
+  transition: opacity 0.1s;
+}
+.time-histogram-bar:hover .time-histogram-bar-fill { opacity: 1; }
+.time-histogram-caption {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  color: var(--dim);
+  font-family: monospace;
+}
+.time-histogram-caption-dim { color: var(--dim); opacity: 0.75; font-family: inherit; }
+.time-histogram-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  color: var(--dim);
+  font-size: 12px;
+}
+
 .log-header {
   display: flex;
   align-items: center;
