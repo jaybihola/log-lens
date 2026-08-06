@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useAppMode } from './hooks/useAppMode.js';
-import { ModeSidebar } from './components/ModeSidebar.jsx';
-import { LogViewerApp } from './LogViewerApp.jsx';
-import { JsonFormatterApp } from './components/json/JsonFormatterApp.jsx';
+import { useAppMode } from './shell/useAppMode.js';
+import { ModeSidebar } from './shell/ModeSidebar.jsx';
+import { LogViewerApp } from './logLens/LogViewerApp.jsx';
+import { JsonFormatterApp } from './jsonLens/JsonFormatterApp.jsx';
 import './App.css';
+import './logLens/LogLens.css';
+import './jsonLens/JsonLens.css';
 
 // The app shell: a thin icon rail picks which independent tool is visible.
 // Both stay mounted at all times (just hidden via CSS, not unmounted) —
