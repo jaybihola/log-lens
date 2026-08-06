@@ -8,6 +8,19 @@
 // (e.g. both "event" and "event.type" exist as real fields) — such a node
 // keeps `children` and also carries `isLeaf`/`item`, so callers can decide
 // how to present that edge case rather than losing the data.
+
+// Single source of truth for per-depth indent — was a "14" duplicated
+// independently in FieldTree.jsx (folder rows) and each of its two callers'
+// own leaf-row renderers (FieldsSidebar.jsx, JsonFileSidebar.jsx). Bumped
+// from 14 to 18px: at the old value, three or four nested levels of a real
+// JSON folder tree compressed close enough together to be hard to tell
+// apart at a glance.
+export const TREE_INDENT_BASE = 8;
+export const TREE_INDENT_STEP = 18;
+export function treeIndent(depth) {
+  return TREE_INDENT_BASE + depth * TREE_INDENT_STEP;
+}
+
 export function buildFieldTree(items, getPath = (item) => item.path) {
   const root = new Map();
 

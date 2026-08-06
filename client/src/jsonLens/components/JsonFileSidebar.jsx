@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { FolderPlus, FilePlus2, FileJson, FileClock } from 'lucide-react';
-import { FieldTree } from '../../shared/components/FieldTree.jsx';
+import { FieldTree, TreeGuides } from '../../shared/components/FieldTree.jsx';
+import { treeIndent } from '../../shared/render/fieldTree.js';
 import { FilePickerBody } from '../../shared/components/FilePickerBody.jsx';
 import { ConfirmModal } from '../../shared/components/ConfirmModal.jsx';
 import { PromptModal } from '../../shared/components/PromptModal.jsx';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { SidebarResizeHandle } from '../../shared/components/SidebarResizeHandle.jsx';
-import { Tooltip } from '../../shared/components/Tooltip.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
 import { jsonLensApi } from '../api/jsonLensClient.js';
 import { isTabDirty } from '../hooks/useJsonTabs.js';
@@ -106,7 +106,7 @@ export function JsonFileSidebar({
   );
 
   const renderEmptyFolder = (node, depth) => (
-    <p className="json-file-empty" style={{ paddingLeft: 8 + (depth + 1) * 14 }}>Empty folder</p>
+    <p className="json-file-empty" style={{ paddingLeft: treeIndent(depth + 1) }}>Empty folder</p>
   );
 
   const renderLeaf = (node, depth) => {
@@ -122,10 +122,11 @@ export function JsonFileSidebar({
           active ? 'active' : '',
           isMenuActive(node.path) ? 'menu-target' : '',
         ].filter(Boolean).join(' ')}
-        style={{ paddingLeft: 8 + depth * 14 }}
+        style={{ paddingLeft: treeIndent(depth) }}
         onClick={() => openFile(node.path)}
         onContextMenu={(e) => handleFileMenu(e, node)}
       >
+        <TreeGuides depth={depth} />
         <FileJson size={13} strokeWidth={1.75} className="json-file-row-icon" />
         <span className="json-file-row-name">{node.segment}</span>
         {dirty && <span className="json-file-row-dirty" />}
@@ -136,11 +137,10 @@ export function JsonFileSidebar({
   return (
     <aside className={menu ? 'fields-sidebar json-file-sidebar menu-open' : 'fields-sidebar json-file-sidebar'} style={{ flexBasis: width }}>
       <div className="fields-sidebar-controls">
-        <Tooltip label="Add folder" description="Open a folder from disk and browse its .json files here.">
-          <button type="button" className="icon-btn" onClick={() => setModal({ type: 'add-folder' })}>
-            <FolderPlus size={14} strokeWidth={1.75} />
-          </button>
-        </Tooltip>
+        <button type="button" className="sidebar-add-folder-btn" onClick={() => setModal({ type: 'add-folder' })}>
+          <FolderPlus size={14} strokeWidth={1.75} />
+          <span>Add folder…</span>
+        </button>
       </div>
 
       <div className="fields-sidebar-list">

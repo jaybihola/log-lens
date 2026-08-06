@@ -112,8 +112,9 @@
 
 .fields-sidebar-row {
   width: 100%; display: flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-1-5) var(--space-2); border-radius: 5px; border: none; background: none;
+  padding: var(--space-2) var(--space-2); border-radius: 5px; border: none; background: none;
   color: var(--fg); text-align: left; cursor: pointer; font-size: var(--text-sm);
+  position: relative;
 }
 .fields-sidebar:not(.menu-open) .fields-sidebar-row:hover, .fields-sidebar-row.menu-target { background: var(--panel-3); }
 .fields-sidebar-row.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.1); }
