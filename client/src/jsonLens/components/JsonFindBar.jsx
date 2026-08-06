@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 // View mode's non-destructive find-in-view bar — same shape/behavior as Log
 // Lens's own FindBar.jsx (query input, n/total count, next/prev, a
@@ -29,17 +30,18 @@ export function JsonFindBar({ query, onQueryChange, caseSensitive, onToggleCaseS
         }}
       />
       <span className="json-find-bar-count">{query.trim() ? `${matchCount ? currentIndex + 1 : 0}/${matchCount}` : ''}</span>
-      <button type="button" title="Previous match (Shift+Enter)" onClick={onPrev} disabled={!matchCount}>↑</button>
-      <button type="button" title="Next match (Enter)" onClick={onNext} disabled={!matchCount}>↓</button>
-      <button
-        type="button"
-        className={caseSensitive ? 'active' : ''}
-        title="Case-sensitive"
-        onClick={onToggleCaseSensitive}
-      >
-        Aa
-      </button>
-      <button type="button" title="Close (Esc)" onClick={onClose}>×</button>
+      <Tooltip label="Previous match" description="Shift+Enter"><button type="button" onClick={onPrev} disabled={!matchCount}>↑</button></Tooltip>
+      <Tooltip label="Next match" description="Enter"><button type="button" onClick={onNext} disabled={!matchCount}>↓</button></Tooltip>
+      <Tooltip label="Case-sensitive">
+        <button
+          type="button"
+          className={caseSensitive ? 'active' : ''}
+          onClick={onToggleCaseSensitive}
+        >
+          Aa
+        </button>
+      </Tooltip>
+      <Tooltip label="Close" description="Esc"><button type="button" onClick={onClose}>×</button></Tooltip>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { getColumnValue, isColumnValueObject } from '../render/jsonPaths.js';
 import { pairColor } from '../render/pairing.js';
 import { ExpandedDoc } from './ExpandedDoc.jsx';
 import { CopyButton } from '../../shared/components/CopyButton.jsx';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 export function LineRow({
   entry, terms, caseSensitive, findTerms, findCaseSensitive, isCurrentFindMatch,
@@ -50,34 +51,36 @@ export function LineRow({
   return (
     <div className={wrapClass}>
       <div className={rowClass} data-seq={entry.seq} onContextMenu={handleContextMenu}>
-        <span
-          className={`pin-col ${pinned ? 'pinned' : ''}`}
-          title={pinned ? 'Unpin this line' : 'Pin this line'}
-          onClick={(e) => { e.stopPropagation(); onTogglePinned(entry.seq); }}
-        >
-          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true">
-            <path d="M6.5 1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V5l2 3.5V10h-2.5v4.5a.5.5 0 0 1-1 0V10H5V8.5L7 5V1.5Z" />
-          </svg>
-        </span>
+        <Tooltip label={pinned ? 'Unpin this line' : 'Pin this line'}>
+          <span
+            className={`pin-col ${pinned ? 'pinned' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onTogglePinned(entry.seq); }}
+          >
+            <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true">
+              <path d="M6.5 1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V5l2 3.5V10h-2.5v4.5a.5.5 0 0 1-1 0V10H5V8.5L7 5V1.5Z" />
+            </svg>
+          </span>
+        </Tooltip>
         <span className="num">{entry.seq}</span>
         <span className="pair-col">
           {pairedSeq && (
-            <span
-              className="pair-ref"
-              style={{ color: pairColor(Math.min(entry.seq, pairedSeq)) }}
-              title={`Same logger call as #${pairedSeq} — click to jump`}
-              onClick={(e) => { e.stopPropagation(); onJumpToPaired(pairedSeq); }}
-            >
-              ({pairedSeq})
-            </span>
+            <Tooltip label={`Same logger call as #${pairedSeq}`} description="Click to jump to it.">
+              <span
+                className="pair-ref"
+                style={{ color: pairColor(Math.min(entry.seq, pairedSeq)) }}
+                onClick={(e) => { e.stopPropagation(); onJumpToPaired(pairedSeq); }}
+              >
+                ({pairedSeq})
+              </span>
+            </Tooltip>
           )}
         </span>
         <span className="ts" style={{ width: tsWidth }}>
           {timestamp ? formatTimeShort(timestamp) : ''}
           {gapMs != null && (
-            <span className="gap-flag" title={`${formatGap(gapMs)} since the previous shown line (an outlier gap for this view)`}>
-              +{formatGap(gapMs)}
-            </span>
+            <Tooltip label={`${formatGap(gapMs)} since the previous shown line`} description="An outlier gap for this view.">
+              <span className="gap-flag">+{formatGap(gapMs)}</span>
+            </Tooltip>
           )}
         </span>
         <span className={`badge ${lvlClass}`} style={{ width: badgeWidth }}>{LEVEL_LABELS[lvlClass] || 'INFO'}</span>
@@ -98,13 +101,17 @@ export function LineRow({
       </div>
       <div className="actions">
         <CopyButton text={entry.text} title="Copy this line's raw text" />
-        <button type="button" title="View this line in a line-numbered, highlighted viewer" onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}>
-          {expanded ? 'Show less' : 'Show more'}
-        </button>
-        {onSendToJsonLens && (
-          <button type="button" title="Open this line as a new JSON Lens tab" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
-            JSON Lens
+        <Tooltip label="View this line" description="Open in a line-numbered, highlighted viewer.">
+          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}>
+            {expanded ? 'Show less' : 'Show more'}
           </button>
+        </Tooltip>
+        {onSendToJsonLens && (
+          <Tooltip label="Open in JSON Lens" description="Send this line to a new JSON Lens tab.">
+            <button type="button" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
+              JSON Lens
+            </button>
+          </Tooltip>
         )}
       </div>
       {expanded && (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tooltip } from './Tooltip.jsx';
 
 export function CopyButton({ text, label = 'Copy', className = '', title }) {
   const [copied, setCopied] = useState(false);
@@ -14,9 +15,11 @@ export function CopyButton({ text, label = 'Copy', className = '', title }) {
     }
   };
 
-  return (
-    <button type="button" className={className} title={title} onClick={copy}>
+  const button = (
+    <button type="button" className={className} onClick={copy}>
       {copied ? 'Copied!' : label}
     </button>
   );
+
+  return title ? <Tooltip label={title}>{button}</Tooltip> : button;
 }

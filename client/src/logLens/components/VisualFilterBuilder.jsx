@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from 'react';
 import { Popover } from '../../shared/components/Popover.jsx';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 import { FilterClauseEditor, NEW_GROUP } from './FilterClauseEditor.jsx';
 import { clauseLabel, composeQuery, decomposeQuery } from '../filter/visualClauses.js';
 
@@ -46,10 +47,12 @@ export function VisualFilterBuilder({ query, onChange, fields, buffer }) {
   return (
     <div className="visual-filter-bar">
       {advanced && (
-        <span className="filter-pill filter-pill-advanced" title={advanced}>
-          <span className="filter-pill-text">Advanced: {truncate(advanced, 40)}</span>
-          <button type="button" onClick={clearAdvanced}>×</button>
-        </span>
+        <Tooltip label="Advanced filter" description={advanced}>
+          <span className="filter-pill filter-pill-advanced">
+            <span className="filter-pill-text">Advanced: {truncate(advanced, 40)}</span>
+            <button type="button" onClick={clearAdvanced}>×</button>
+          </span>
+        </Tooltip>
       )}
 
       {groups.map((group, gi) => (
