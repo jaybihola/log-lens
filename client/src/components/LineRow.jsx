@@ -7,7 +7,7 @@ import { ExpandedDoc } from './ExpandedDoc.jsx';
 import { CopyButton } from './CopyButton.jsx';
 
 export function LineRow({
-  entry, terms, isMatch, queryActive, highlightOnly, caseSensitive,
+  entry, terms, caseSensitive, findTerms, findCaseSensitive, isCurrentFindMatch,
   pairedSeq, timestamp,
   expanded, onToggleExpand, onJumpToPaired,
   pinned, onTogglePinned, flash,
@@ -17,15 +17,15 @@ export function LineRow({
   const lvlClass = levelClass(entry.text);
 
   const html = useMemo(() => {
-    const highlightedFull = applyTermHits(detectAndHighlight(entry.text, false), terms, caseSensitive);
-    if (visibleLength(highlightedFull) > LONG_LINE_THRESHOLD) {
-      return `${truncateHtmlToVisibleChars(highlightedFull, LONG_LINE_THRESHOLD)} <span class="truncated-hint">…</span>`;
+    let highlighted = applyTermHits(detectAndHighlight(entry.text, false), terms, caseSensitive);
+    if (findTerms && findTerms.length) highlighted = applyTermHits(highlighted, findTerms, findCaseSensitive, 'find-hit');
+    if (visibleLength(highlighted) > LONG_LINE_THRESHOLD) {
+      return `${truncateHtmlToVisibleChars(highlighted, LONG_LINE_THRESHOLD)} <span class="truncated-hint">…</span>`;
     }
-    return highlightedFull;
-  }, [entry.text, terms, caseSensitive]);
+    return highlighted;
+  }, [entry.text, terms, caseSensitive, findTerms, findCaseSensitive]);
 
-  const rowClass = ['line', lvlClass, highlightOnly && queryActive ? (isMatch ? 'query-hit' : 'query-dim') : '', flash ? 'flash' : '']
-    .filter(Boolean).join(' ');
+  const rowClass = ['line', lvlClass, flash ? 'flash' : '', isCurrentFindMatch ? 'find-current' : ''].filter(Boolean).join(' ');
 
   return (
     <div className="line-wrap">

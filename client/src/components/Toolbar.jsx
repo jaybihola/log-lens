@@ -2,6 +2,7 @@ import { Popover } from './Popover.jsx';
 import { PresetsMenu } from './PresetsMenu.jsx';
 import { MoreMenu } from './MoreMenu.jsx';
 import { FilterInput } from './FilterInput.jsx';
+import { VisualFilterBuilder } from './VisualFilterBuilder.jsx';
 
 const AUTO_REFRESH_OPTIONS = [
   [0, 'Off'],
@@ -12,13 +13,14 @@ const AUTO_REFRESH_OPTIONS = [
 
 export function Toolbar({
   ui, onChange, onClear, isApiTab, onFetch, fetching,
-  highlightOnly, onToggleHighlightOnly,
   fontSize, onStepFontSize,
   presets, currentQuery, onApplyPreset, onSavePreset, onRemovePreset,
   pinnedSeqs, buffer, onJumpToSeq, onUnpin, onJumpQuery,
   columns, onAddColumn, onRemoveColumn,
   indexFields,
   filterInputRef,
+  filterMode, onToggleFilterMode,
+  onOpenFind,
 }) {
   const {
     filterQuery, caseSensitive, autoscroll, paused, wrap, autoRefreshSec,
@@ -26,13 +28,30 @@ export function Toolbar({
 
   return (
     <div className="toolbar">
-      <FilterInput
-        ref={filterInputRef}
-        placeholder='JQL filter — e.g. "mismatched" OR validation -heartbeat  |  event.type:Fetch  ("/" to focus)'
-        value={filterQuery}
-        onChange={(v) => onChange({ filterQuery: v })}
-        fields={indexFields}
-      />
+      {filterMode === 'visual' ? (
+        <VisualFilterBuilder
+          query={filterQuery}
+          onChange={(v) => onChange({ filterQuery: v })}
+          fields={indexFields}
+          buffer={buffer}
+        />
+      ) : (
+        <FilterInput
+          ref={filterInputRef}
+          placeholder='JQL filter — e.g. "mismatched" OR validation -heartbeat  |  event.type:Fetch  ("/" to focus)'
+          value={filterQuery}
+          onChange={(v) => onChange({ filterQuery: v })}
+          fields={indexFields}
+        />
+      )}
+      <button
+        type="button"
+        className={filterMode === 'visual' ? 'active' : ''}
+        title={filterMode === 'visual' ? 'Switch to text filter' : 'Switch to visual filter builder'}
+        onClick={onToggleFilterMode}
+      >
+        ⚏
+      </button>
 
       {isApiTab && (
         <button type="button" onClick={onFetch} disabled={fetching}>{fetching ? 'Fetching…' : 'Fetch new'}</button>
@@ -46,6 +65,7 @@ export function Toolbar({
         {paused ? 'Resume' : 'Pause'}
       </button>
       <button type="button" onClick={onClear}>Clear</button>
+      <button type="button" title="Find in view (⌘F / Ctrl+F)" onClick={onOpenFind}>Find</button>
 
       <Popover
         align="right"
@@ -78,10 +98,6 @@ export function Toolbar({
           <label className="view-menu-check">
             <input type="checkbox" checked={wrap} onChange={() => onChange({ wrap: !wrap })} />
             Wrap lines
-          </label>
-          <label className="view-menu-check">
-            <input type="checkbox" checked={highlightOnly} onChange={onToggleHighlightOnly} />
-            Highlight-only
           </label>
           {!isApiTab && (
             <label className="view-menu-check">

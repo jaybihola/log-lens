@@ -7,6 +7,7 @@ import { useColumnWidths } from './hooks/useColumnWidths.js';
 import { useTheme } from './hooks/useTheme.js';
 import { useIndexFields } from './hooks/useIndexFields.js';
 import { useFieldsSidebar } from './hooks/useFieldsSidebar.js';
+import { useFilterMode } from './hooks/useFilterMode.js';
 import { resolveJumpTarget } from './render/timestamp.js';
 import { TabBar } from './components/TabBar.jsx';
 import { TabPickerModal } from './components/TabPickerModal.jsx';
@@ -24,15 +25,17 @@ function App() {
     openNewTab, activateTab, closeTab, clearActiveTab, updateActiveTabUi,
     toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, fetchActiveTab,
   } = useTabs();
-  const { highlightOnly, toggleHighlightOnly, fontSize, stepFontSize } = useDisplaySettings();
+  const { fontSize, stepFontSize } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
   const { recentFiles, addRecent, removeRecent } = useRecentFiles();
   const { tsWidth, badgeWidth, extraColumnWidth, setColumnWidth } = useColumnWidths();
   const { theme, setTheme, toggleTheme } = useTheme();
-  const { sidebarOpen, toggleSidebar } = useFieldsSidebar();
+  const { sidebarOpen, toggleSidebar, sidebarWidth, resizeSidebar } = useFieldsSidebar();
+  const { filterMode, toggleFilterMode } = useFilterMode();
 
   const [modal, setModal] = useState(null); // null | 'picker' | 'preferences'
   const [fetching, setFetching] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
   const filterInputRef = useRef(null);
   const entryViewRef = useRef(null);
 
@@ -90,13 +93,25 @@ function App() {
   }, [activeTab, activeUi.autoRefreshSec, fetchActiveTab]);
 
   // "/" focuses the filter box (unless already typing somewhere — a plain
-  // input/textarea/select, or the CodeMirror raw-request editor); Esc closes
-  // whichever modal is open.
+  // input/textarea/select, or the CodeMirror raw-request editor); ⌘F/Ctrl+F
+  // opens the find bar instead of the browser's native find; Esc closes
+  // whichever of find/modal is currently open (find takes priority, since
+  // it's the more likely thing you just want to dismiss).
   useEffect(() => {
     const handler = (e) => {
+      if (e.key === 'Escape' && findOpen) {
+        e.preventDefault();
+        setFindOpen(false);
+        return;
+      }
       if (e.key === 'Escape' && modal) {
         e.preventDefault();
         setModal(null);
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && activeTab) {
+        e.preventDefault();
+        setFindOpen(true);
         return;
       }
       if (e.key === '/' && !modal) {
@@ -114,7 +129,7 @@ function App() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [modal]);
+  }, [modal, findOpen, activeTab]);
 
   return (
     <div className="app">
@@ -153,6 +168,8 @@ function App() {
               columns={activeUi.columns}
               onToggleColumn={toggleColumn}
               onApplyFilter={handleApplyFieldFilter}
+              width={sidebarWidth}
+              onResize={resizeSidebar}
             />
           )}
           <div className="app-main">
@@ -163,8 +180,6 @@ function App() {
               isApiTab={activeTab.kind === 'api'}
               onFetch={handleFetch}
               fetching={fetching}
-              highlightOnly={highlightOnly}
-              onToggleHighlightOnly={toggleHighlightOnly}
               fontSize={fontSize}
               onStepFontSize={stepFontSize}
               presets={presets}
@@ -182,6 +197,9 @@ function App() {
               onRemoveColumn={removeColumn}
               indexFields={indexFields}
               filterInputRef={filterInputRef}
+              filterMode={filterMode}
+              onToggleFilterMode={toggleFilterMode}
+              onOpenFind={() => setFindOpen(true)}
             />
             {activeTab.kind === 'api' && activeTab.fetchError && (
               <div className="api-error">{activeTab.fetchError}</div>
@@ -191,7 +209,6 @@ function App() {
               buffer={activeBuffer}
               ui={activeUi}
               status={activeTab.status}
-              highlightOnly={highlightOnly}
               fontSize={fontSize}
               toggleExpanded={toggleExpanded}
               togglePinned={togglePinned}
@@ -202,6 +219,8 @@ function App() {
               badgeWidth={badgeWidth}
               extraColumnWidth={extraColumnWidth}
               onResizeColumn={setColumnWidth}
+              findOpen={findOpen}
+              onCloseFind={() => setFindOpen(false)}
             />
           </div>
         </div>
