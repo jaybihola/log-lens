@@ -8,7 +8,9 @@ How log-lens is actually built — for anyone extending it. See the root
 
 Both `server/src/` and `client/src/` are split the same way, deliberately —
 so two people (or two agents) can work on Log Lens and JSON Lens at the same
-time with minimal shared-file collisions:
+time with minimal shared-file collisions. For the operational playbook (how
+many agents at once, worktree setup, merge order), see
+[`PARALLEL_AGENTS.md`](PARALLEL_AGENTS.md).
 
 ```
 server/src/
