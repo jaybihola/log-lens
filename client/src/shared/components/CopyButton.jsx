@@ -22,9 +22,8 @@ export function CopyButton({ text, label = 'Copy', className = '', title, descri
 
   const button = (
     <button type="button" className={className} onClick={copy}>
-      {icon
-        ? (copied ? <Check size={13} strokeWidth={2} /> : <Copy size={13} strokeWidth={1.75} />)
-        : (copied ? 'Copied!' : label)}
+      {icon && (copied ? <Check size={13} strokeWidth={2} /> : <Copy size={13} strokeWidth={1.75} />)}
+      {copied ? 'Copied!' : label}
     </button>
   );
 
