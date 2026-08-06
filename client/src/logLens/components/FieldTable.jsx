@@ -20,7 +20,7 @@ export function FieldTable({ entry, pairedSeq, timeLabel, levelLabel, columns, o
           const isColumn = row.keyPath && columns.includes(row.keyPath);
           return (
             <tr key={row.label}>
-              <th>{row.label}</th>
+              <th title={row.label}>{row.label}</th>
               <td>{row.value}</td>
               <td className="field-actions-cell">
                 <div className="field-actions">
