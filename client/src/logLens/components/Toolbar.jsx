@@ -23,6 +23,8 @@ export function Toolbar({
   filterInputRef,
   filterMode, onToggleFilterMode,
   onOpenFind,
+  histogramOpen, onToggleHistogram,
+  tabLabel,
 }) {
   const {
     filterQuery, caseSensitive, autoscroll, paused, wrap, autoRefreshSec,
@@ -130,6 +132,14 @@ export function Toolbar({
             <span>Wrap lines</span>
             <span className="view-menu-toggle-indicator" />
           </button>
+          <button
+            type="button"
+            className={histogramOpen ? 'view-menu-toggle active' : 'view-menu-toggle'}
+            onClick={onToggleHistogram}
+          >
+            <span>Time histogram</span>
+            <span className="view-menu-toggle-indicator" />
+          </button>
           {!isApiTab && (
             <button
               type="button"
@@ -182,6 +192,8 @@ export function Toolbar({
           columns={columns}
           onAddColumn={onAddColumn}
           onRemoveColumn={onRemoveColumn}
+          ui={ui}
+          tabLabel={tabLabel}
         />
       </Popover>
     </div>

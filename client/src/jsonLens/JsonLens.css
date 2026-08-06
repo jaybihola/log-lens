@@ -28,6 +28,21 @@
   padding: var(--space-2-5) var(--space-3); background: var(--panel); border-bottom: 1px solid var(--border);
 }
 .json-toolbar-divider { width: 1px; height: 20px; background: var(--border); flex: 0 0 auto; margin: 0 2px; }
+
+/* Edit/View mode toggle + View's Code/Table sub-mode toggle — both use the
+   same pill-group look, distinct from the plain icon-btn row around them.
+   The mode toggle is the one icon control in the app that keeps a visible
+   text label alongside its icon rather than relying on Tooltip alone —
+   deliberate, not an oversight: which of the tool's two fundamentally
+   different modes you're in is important enough to stay legible at a
+   glance, not just on hover. Every other icon-only control follows the
+   tooltip-only convention. */
+.json-mode-toggle {
+  display: flex; align-items: center; gap: 2px; flex: 0 0 auto;
+  padding: 2px; border-radius: 7px; background: var(--panel-sunken);
+}
+.json-mode-toggle .icon-btn { display: flex; align-items: center; gap: 5px; border-radius: 5px; }
+.json-mode-toggle-label { font-size: var(--text-sm); }
 .json-validation { font-size: var(--text-sm); font-family: monospace; color: var(--dim); }
 .json-validation.ok { color: var(--info); }
 .json-validation.error { color: var(--error); }
@@ -35,6 +50,66 @@
 .json-editor-body { flex: 1; min-height: 0; padding: var(--space-2-5) var(--space-3); display: flex; }
 .json-editor-body .json-editor { flex: 1; min-width: 0; }
 .json-editor-body .cm-editor { height: 100%; }
+
+/* ---- find-in-view bar (JsonFindBar.jsx) — View mode only, deliberately
+   its own control rather than sharing the field-filter search box below:
+   this only highlights/steps through matches, never removes anything.
+   Mirrors Log Lens's own .find-bar (see LogLens.css) but kept as JSON
+   Lens's own rules per the directory split. ---- */
+
+.json-find-bar {
+  display: flex; align-items: center; gap: var(--space-1-5); flex: 0 0 auto;
+  margin: var(--space-2) var(--space-3) 0; padding: var(--space-1-5) var(--space-2);
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+}
+.json-find-bar-input { width: 320px; max-width: 100%; font-family: monospace; }
+.json-find-bar-count { min-width: 44px; text-align: center; color: var(--dim); font-size: var(--text-xs); font-family: monospace; }
+.json-find-bar button { width: 24px; height: 24px; padding: 0; line-height: 1; }
+
+/* Table sub-mode's cell-level highlight (HighlightedText in JsonTableView.jsx). */
+.json-find-hit { background: rgba(var(--warn-rgb), 0.45); border-radius: 2px; }
+.json-find-hit.json-find-current { background: var(--flash); box-shadow: 0 0 0 1px var(--warn); }
+.json-table-row-current { background: var(--flash) !important; }
+
+/* Code sub-mode's highlight (a CodeMirror mark decoration — see JsonEditor.jsx). */
+.json-editor .cm-json-find-hit { background: rgba(var(--warn-rgb), 0.45); border-radius: 2px; }
+.json-editor .cm-json-find-hit.cm-json-find-current { background: var(--flash); box-shadow: 0 0 0 1px var(--warn); }
+
+/* ---- View mode, table sub-view (JsonTableView.jsx) ---- */
+
+.json-table-view {
+  flex: 1; min-width: 0; overflow: auto;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px;
+}
+.json-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-family: 'SF Mono', Consolas, monospace; }
+.json-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  text-align: left; font-family: system-ui, sans-serif; font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.03em; color: var(--dim); background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: var(--space-1-5) var(--space-2-5);
+}
+.json-table-row:hover { background: var(--panel-3); }
+.json-table-row td { border-bottom: 1px solid var(--border); padding: var(--space-1) var(--space-2-5); vertical-align: top; }
+.json-table-key-cell { white-space: nowrap; }
+.json-table-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; padding: 0; margin-right: 2px; border: none; background: none;
+  color: var(--dim); cursor: pointer; vertical-align: middle;
+}
+.json-table-toggle:hover { color: var(--fg); }
+.json-table-toggle-spacer { display: inline-block; width: 18px; }
+.json-table-chevron { transition: transform 0.1s ease; }
+.json-table-chevron.expanded { transform: rotate(90deg); }
+.json-table-key { color: var(--syntax-key); }
+.json-table-type-cell { white-space: nowrap; }
+.json-table-type { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.02em; color: var(--dim); }
+.json-table-value-cell { width: 100%; word-break: break-word; }
+.json-table-preview { color: var(--dim); font-style: italic; }
+.json-table-scalar-string { color: var(--syntax-string); }
+.json-table-scalar-number { color: var(--syntax-number); }
+.json-table-scalar-boolean, .json-table-scalar-null { color: var(--syntax-bool); }
+.json-table-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--dim); font-size: var(--text-base); }
+.json-table-error { color: var(--error); }
 
 .json-field-filter {
   display: flex; flex-direction: column; gap: var(--space-1-5);

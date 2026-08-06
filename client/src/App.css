@@ -362,11 +362,13 @@ body.col-resizing { cursor: col-resize; user-select: none; }
   height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;
   background: var(--panel-2); margin-bottom: var(--space-2);
 }
-.picker-entry { padding: var(--space-1-5) var(--space-2-5); font-family: monospace; font-size: var(--text-base); cursor: pointer; }
+.picker-entry { padding: var(--space-1-5) var(--space-2-5); font-family: monospace; font-size: var(--text-base); cursor: pointer; display: flex; align-items: center; gap: var(--space-1-5); }
 .picker-entry:hover { background: rgba(var(--accent-rgb), 0.12); }
+.picker-entry-checkbox { flex: 0 0 auto; margin: 0; }
 .picker-hidden-toggle { display: flex; align-items: center; gap: var(--space-1-5); font-size: var(--text-sm); color: var(--dim); margin-bottom: var(--space-2); }
-.picker-path-row { display: flex; gap: var(--space-1-5); }
+.picker-path-row { display: flex; align-items: center; gap: var(--space-1-5); }
 .picker-path-row input { flex: 1; font-family: monospace; }
+.picker-selected-count { font-size: var(--text-sm); color: var(--dim); white-space: nowrap; }
 .picker-empty { color: var(--dim); font-size: var(--text-sm); margin-bottom: var(--space-2); }
 
 .json-editor { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }

@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { X } from 'lucide-react';
 import { compileQuery } from '../filter/compile.js';
-import { ownTimestamp } from '../render/timestamp.js';
+import { ownTimestamp, parseTimestampMs, outlierGapThreshold, formatTimeShort } from '../render/timestamp.js';
 import { LineRow } from './LineRow.jsx';
 import { LogHeader } from './LogHeader.jsx';
 import { FindBar } from './FindBar.jsx';
@@ -10,12 +11,12 @@ import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
 
 export const EntryView = forwardRef(function EntryView({
   buffer, ui, status, fontSize,
-  toggleExpanded, togglePinned,
+  toggleExpanded, togglePinned, onChangeUi,
   extraColumns, onToggleColumn, onRemoveColumn,
   tsWidth, badgeWidth, extraColumnWidth, onResizeColumn,
   findOpen, onCloseFind, onSendToJsonLens,
 }, ref) {
-  const { filterQuery, caseSensitive, autoscroll, paused, wrap, expandedSeqs, pinnedSeqs } = ui;
+  const { filterQuery, caseSensitive, autoscroll, paused, wrap, expandedSeqs, pinnedSeqs, timeRange } = ui;
   const scrollRef = useRef(null);
   const pausedSnapshotRef = useRef(null);
   const [flashSeq, setFlashSeq] = useState(null);
@@ -36,19 +37,48 @@ export const EntryView = forwardRef(function EntryView({
     ? (pausedSnapshotRef.current ??= buffer)
     : buffer;
 
-  const compiled = useMemo(() => compileQuery(filterQuery, { caseSensitive }), [filterQuery, caseSensitive]);
-  const queryActive = filterQuery.trim().length > 0;
+  const compiled = useMemo(() => compileQuery(filterQuery, { caseSensitive, timeRange }), [filterQuery, caseSensitive, timeRange]);
+  // Either axis alone is enough to trigger filtering — a time-range
+  // selection with no JQL query still needs to narrow the view.
+  const filterActive = filterQuery.trim().length > 0 || Boolean(timeRange);
 
   // The filter box actually filters (removes non-matching lines) — there's
   // no "highlight only" mode here anymore. Finding without removing lines
   // is the find bar's job (below), scoped to whatever this has already
   // narrowed things down to.
   const visible = useMemo(() => {
-    if (!queryActive) return effectiveBuffer.map((entry) => ({ entry }));
+    if (!filterActive) return effectiveBuffer.map((entry) => ({ entry }));
     return effectiveBuffer.filter((entry) => compiled.matcher(entry.text)).map((entry) => ({ entry }));
-  }, [effectiveBuffer, compiled, queryActive]);
+  }, [effectiveBuffer, compiled, filterActive]);
 
   const matchCount = visible.length;
+
+  // Per-line time-gap outliers — deliberately scoped down from "annotate
+  // every line" (see TimeHistogram.jsx, which already covers coarse-grained
+  // "where are the gaps" via its density strip) to just flagging unusually
+  // large gaps between consecutive *visible* lines, i.e. what's left after
+  // the active filter — a signal the histogram doesn't give you, since it
+  // only shows density, not "how much time did the filter just skip over
+  // between these two specific lines."
+  const gapBySeq = useMemo(() => {
+    const deltas = [];
+    const rows = [];
+    let prevMs = null;
+    for (const { entry } of visible) {
+      const ts = ownTimestamp(entry.text);
+      const ms = ts ? parseTimestampMs(ts) : null;
+      const gap = (ms !== null && prevMs !== null) ? ms - prevMs : null;
+      if (gap !== null && gap >= 0) deltas.push(gap);
+      rows.push({ seq: entry.seq, gap });
+      if (ms !== null) prevMs = ms;
+    }
+    const threshold = outlierGapThreshold(deltas);
+    const map = new Map();
+    for (const r of rows) {
+      if (r.gap !== null && r.gap >= threshold) map.set(r.seq, r.gap);
+    }
+    return map;
+  }, [visible]);
 
   const findCompiled = useMemo(() => compileQuery(findQuery, { caseSensitive: findCaseSensitive }), [findQuery, findCaseSensitive]);
   const findActive = findOpen && findQuery.trim().length > 0;
@@ -135,6 +165,17 @@ export const EntryView = forwardRef(function EntryView({
         <span className="counts">{matchCount} / {effectiveBuffer.length}</span>
         {compiled.error && <span className="jql-error">{compiled.error}</span>}
         {paused && <span className="paused-hint">Paused</span>}
+        {timeRange && (
+          <button
+            type="button"
+            className="time-range-chip"
+            onClick={() => onChangeUi?.({ timeRange: null })}
+            title="Clear the histogram's time-range selection (independent of the JQL filter)."
+          >
+            <span>{formatTimeShort(new Date(timeRange.start).toISOString())} – {formatTimeShort(new Date(timeRange.end).toISOString())}</span>
+            <X size={11} strokeWidth={2} />
+          </button>
+        )}
       </div>
       <LogHeader
         columns={extraColumns}
@@ -180,6 +221,7 @@ export const EntryView = forwardRef(function EntryView({
                     findCaseSensitive={findCaseSensitive}
                     isCurrentFindMatch={entry.seq === currentFindSeq}
                     timestamp={ownTimestamp(entry.text)}
+                    gapMs={gapBySeq.get(entry.seq) ?? null}
                     expanded={expandedSeqs.has(entry.seq)}
                     onToggleExpand={toggleExpanded}
                     pinned={pinnedSeqs.has(entry.seq)}
