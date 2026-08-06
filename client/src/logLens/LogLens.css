@@ -159,14 +159,26 @@
 .jql-error { color: var(--error); font-family: monospace; }
 .paused-hint { color: var(--warn); font-weight: 700; }
 
-/* ---- time histogram: log-volume-over-time strip, stacked by log level —
-   still no drag-select/click-to-filter yet, see components/TimeHistogram.jsx ---- */
+/* ---- time histogram: log-volume-over-time strip, stacked by log level,
+   adjustable bucket interval — still no drag-select/click-to-filter yet,
+   see components/TimeHistogram.jsx ---- */
 
 .time-histogram {
   flex: 0 0 auto;
-  padding: 8px 18px 6px;
+  padding: 6px 18px 6px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+}
+.time-histogram-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.time-histogram-head-spacer { flex: 1; }
+.time-histogram-interval {
+  font-size: 10.5px; padding: 2px 5px; border-radius: 5px;
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--fg);
 }
 .time-histogram-bars {
   display: flex;

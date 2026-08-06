@@ -9,15 +9,18 @@ function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     const fontSize = Number(raw.fontSize);
+    const intervalMs = Number(raw.histogramIntervalMs);
     return {
       fontSize: Number.isFinite(fontSize) ? fontSize : DEFAULT_FONT_SIZE,
       // Default to visible for a first-time user (no stored value at all),
       // but keep respecting an explicit prior choice either way — only
       // `undefined` (key never written) falls back to the new default.
       histogramOpen: typeof raw.histogramOpen === 'boolean' ? raw.histogramOpen : true,
+      // null = auto interval (span-based); a stored number is an explicit override.
+      histogramIntervalMs: Number.isFinite(intervalMs) ? intervalMs : null,
     };
   } catch {
-    return { fontSize: DEFAULT_FONT_SIZE, histogramOpen: true };
+    return { fontSize: DEFAULT_FONT_SIZE, histogramOpen: true, histogramIntervalMs: null };
   }
 }
 
@@ -43,5 +46,9 @@ export function useDisplaySettings() {
     setSettings((prev) => ({ ...prev, histogramOpen: !prev.histogramOpen }));
   }, []);
 
-  return { ...settings, stepFontSize, toggleHistogram };
+  const setHistogramInterval = useCallback((ms) => {
+    setSettings((prev) => ({ ...prev, histogramIntervalMs: ms }));
+  }, []);
+
+  return { ...settings, stepFontSize, toggleHistogram, setHistogramInterval };
 }
