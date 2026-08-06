@@ -1,16 +1,17 @@
 import { Wand2, RefreshCw, Pause, Play, Trash2, Search, Bookmark, Settings2, MoreHorizontal } from 'lucide-react';
 import { Popover } from '../../shared/components/Popover.jsx';
 import { Tooltip } from '../../shared/components/Tooltip.jsx';
+import { Dropdown } from '../../shared/components/Dropdown.jsx';
 import { PresetsMenu } from './PresetsMenu.jsx';
 import { MoreMenu } from './MoreMenu.jsx';
 import { FilterInput } from './FilterInput.jsx';
 import { VisualFilterBuilder } from './VisualFilterBuilder.jsx';
 
 const AUTO_REFRESH_OPTIONS = [
-  [0, 'Off'],
-  [15, '15s'],
-  [30, '30s'],
-  [60, '60s'],
+  { value: 0, label: 'Off' },
+  { value: 15, label: '15s' },
+  { value: 30, label: '30s' },
+  { value: 60, label: '60s' },
 ];
 
 export function Toolbar({
@@ -154,20 +155,21 @@ export function Toolbar({
           <div className="view-menu-row">
             <span>Font size</span>
             <span className="font-stepper">
-              <button type="button" title="Decrease font size" onClick={() => onStepFontSize(-0.5)}>A-</button>
+              <Tooltip label="Decrease font size" placement="right"><button type="button" onClick={() => onStepFontSize(-0.5)}>A-</button></Tooltip>
               <span className="font-stepper-value">{fontSize}</span>
-              <button type="button" title="Increase font size" onClick={() => onStepFontSize(0.5)}>A+</button>
+              <Tooltip label="Increase font size" placement="right"><button type="button" onClick={() => onStepFontSize(0.5)}>A+</button></Tooltip>
             </span>
           </div>
           {isApiTab && (
             <div className="view-menu-row">
               <span>Auto-refresh</span>
-              <select
+              <Dropdown
+                align="right"
+                className="auto-refresh-dropdown"
                 value={autoRefreshSec}
-                onChange={(e) => onChange({ autoRefreshSec: Number(e.target.value) })}
-              >
-                {AUTO_REFRESH_OPTIONS.map(([sec, label]) => <option key={sec} value={sec}>{label}</option>)}
-              </select>
+                options={AUTO_REFRESH_OPTIONS}
+                onChange={(v) => onChange({ autoRefreshSec: Number(v) })}
+              />
             </div>
           )}
         </div>

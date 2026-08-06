@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { OPERATORS, operatorArity } from '../filter/visualClauses.js';
 import { computeFieldStats } from '../render/fieldStats.js';
+import { Dropdown } from '../../shared/components/Dropdown.jsx';
 
 const FIELD_LIST_ID = 'filter-clause-field-list';
 const VALUE_LIST_ID = 'filter-clause-value-list';
@@ -69,9 +70,11 @@ export function FilterClauseEditor({ initial, groups, initialGroupId, fields, bu
 
       <div className="filter-clause-row">
         <label>Operator</label>
-        <select value={operator} onChange={(e) => setOperator(e.target.value)}>
-          {OPERATORS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-        </select>
+        <Dropdown
+          value={operator}
+          options={OPERATORS.map((o) => ({ value: o.id, label: o.label }))}
+          onChange={setOperator}
+        />
       </div>
 
       {arity === 'one' && (
@@ -130,11 +133,14 @@ export function FilterClauseEditor({ initial, groups, initialGroupId, fields, bu
       {needsGroupPick && (
         <div className="filter-clause-row">
           <label>Which group?</label>
-          <select value={groupChoice} onChange={(e) => setGroupChoice(e.target.value)}>
-            {groups.map((g, i) => (
-              <option key={g.id} value={g.id}>{`Group ${i + 1} · ${g.clauses.length} filter${g.clauses.length === 1 ? '' : 's'}`}</option>
-            ))}
-          </select>
+          <Dropdown
+            value={groupChoice}
+            options={groups.map((g, i) => ({
+              value: g.id,
+              label: `Group ${i + 1} · ${g.clauses.length} filter${g.clauses.length === 1 ? '' : 's'}`,
+            }))}
+            onChange={setGroupChoice}
+          />
         </div>
       )}
 
