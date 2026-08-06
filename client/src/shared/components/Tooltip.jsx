@@ -18,19 +18,29 @@ export function Tooltip({ label, description, children, placement = 'bottom', di
   const wrapRef = useRef(null);
   const panelRef = useRef(null);
   const timerRef = useRef(null);
+  const disabledRef = useRef(disabled);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ left: 0, top: 0, ready: false });
 
   const show = () => {
-    if (disabled) return;
-    timerRef.current = setTimeout(() => setOpen(true), SHOW_DELAY_MS);
+    if (disabledRef.current) return;
+    // Re-check at fire time, not just schedule time — a click can toggle
+    // `disabled` true (e.g. the Popover it wraps just opened) in the same
+    // tick as a native focus event this span also picks up, racing ahead of
+    // this render's prop update. Without the re-check, the stale schedule
+    // wins and the tooltip reopens on top of whatever `disabled` was meant
+    // to suppress it for.
+    timerRef.current = setTimeout(() => { if (!disabledRef.current) setOpen(true); }, SHOW_DELAY_MS);
   };
   const hide = () => {
     clearTimeout(timerRef.current);
     setOpen(false);
   };
 
-  useEffect(() => { if (disabled) hide(); }, [disabled]);
+  useEffect(() => {
+    disabledRef.current = disabled;
+    if (disabled) hide();
+  }, [disabled]);
 
   useLayoutEffect(() => {
     if (!open) return;
