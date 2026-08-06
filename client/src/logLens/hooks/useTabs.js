@@ -7,6 +7,9 @@ function makeDefaultUi() {
   return {
     filterQuery: '', caseSensitive: false, autoscroll: true, paused: false, wrap: true, autoRefreshSec: 0,
     expandedSeqs: new Set(), pinnedSeqs: new Set(), columns: [],
+    // The time-histogram's drag-to-select range ({ start, end } ms epoch, or
+    // null) — a separate axis from filterQuery, see filter/compile.js.
+    timeRange: null,
   };
 }
 

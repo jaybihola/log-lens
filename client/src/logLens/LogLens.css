@@ -158,10 +158,17 @@
 }
 .jql-error { color: var(--error); font-family: monospace; }
 .paused-hint { color: var(--warn); font-weight: 700; }
+.time-range-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(var(--accent-rgb), 0.14); color: var(--accent); border: none;
+  border-radius: 10px; padding: 2px 8px 2px 9px; font-size: 10.5px; font-family: monospace;
+  cursor: pointer;
+}
+.time-range-chip:hover { background: rgba(var(--accent-rgb), 0.24); }
 
 /* ---- time histogram: log-volume-over-time strip, stacked by log level,
-   adjustable bucket interval — still no drag-select/click-to-filter yet,
-   see components/TimeHistogram.jsx ---- */
+   with drag-to-select-a-range-as-a-filter and an adjustable bucket interval
+   — see components/TimeHistogram.jsx and render/timeHistogram.js ---- */
 
 .time-histogram {
   flex: 0 0 auto;
@@ -176,6 +183,14 @@
   margin-bottom: 4px;
 }
 .time-histogram-head-spacer { flex: 1; }
+.time-histogram-reset {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(var(--accent-rgb), 0.14); color: var(--accent); border: none;
+  border-radius: 10px; padding: 3px 9px; font-size: 10.5px; font-family: monospace;
+  cursor: pointer;
+}
+.time-histogram-reset:hover { background: rgba(var(--accent-rgb), 0.24); }
+.time-histogram-reset-label { font-family: inherit; opacity: 0.85; }
 .time-histogram-interval {
   font-size: 10.5px; padding: 2px 5px; border-radius: 5px;
   background: var(--panel-2); border: 1px solid var(--border); color: var(--fg);
@@ -185,6 +200,8 @@
   align-items: flex-end;
   gap: 1px;
   height: 40px;
+  cursor: crosshair;
+  user-select: none;
 }
 .time-histogram-bar {
   flex: 1 1 0;
@@ -192,8 +209,9 @@
   display: flex;
   align-items: flex-end;
   min-width: 1px;
-  cursor: default;
 }
+.time-histogram-bar.dragging { background: rgba(var(--accent-rgb), 0.16); }
+.time-histogram-bar.selected { background: rgba(var(--accent-rgb), 0.1); }
 .time-histogram-bar-fill {
   width: 100%;
   min-height: 0;
