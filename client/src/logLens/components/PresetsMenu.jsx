@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 export function PresetsMenu({ presets, currentQuery, onApply, onSave, onRemove }) {
   const [name, setName] = useState('');
@@ -29,7 +30,9 @@ export function PresetsMenu({ presets, currentQuery, onApply, onSave, onRemove }
         <div className="preset-list">
           {presets.map((p) => (
             <div className="preset-chip" key={p.name} onContextMenu={(e) => handleContextMenu(e, p)}>
-              <span className="preset-name" title={p.query} onClick={() => onApply(p.query)}>{p.name}</span>
+              <Tooltip label={p.name} description={p.query}>
+                <span className="preset-name" onClick={() => onApply(p.query)}>{p.name}</span>
+              </Tooltip>
               <button type="button" onClick={() => onRemove(p.name)}>×</button>
             </div>
           ))}

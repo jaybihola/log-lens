@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../logLens/api/client.js';
+import { Tooltip } from './Tooltip.jsx';
 
 function basename(p) {
   const parts = p.split(/[/\\]/);
@@ -88,10 +89,12 @@ export function FilePickerBody({
           <label>Recent</label>
           <div className="preset-list">
             {recentFiles.map((path) => (
-              <div className="preset-chip" key={path} title={path}>
-                <span className="preset-name" onClick={() => onOpen(path)}>{basename(path)}</span>
-                <button type="button" onClick={(e) => { e.stopPropagation(); onRemoveRecent(path); }}>×</button>
-              </div>
+              <Tooltip key={path} label={basename(path)} description={path}>
+                <div className="preset-chip">
+                  <span className="preset-name" onClick={() => onOpen(path)}>{basename(path)}</span>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); onRemoveRecent(path); }}>×</button>
+                </div>
+              </Tooltip>
             ))}
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
 import { PromptModal } from '../../shared/components/PromptModal.jsx';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 function basename(p) {
   const parts = p.split(/[/\\]/);
@@ -39,17 +40,17 @@ export function TabGroupsMenu({ groups, openFilePaths, onOpenGroup, onSaveGroup,
       ) : (
         <div className="preset-list">
           {groups.map((g) => (
-            <div
-              className="preset-chip"
-              key={g.name}
-              onContextMenu={(e) => handleContextMenu(e, g)}
-              title={g.paths.map(basename).join(', ')}
-            >
-              <span className="preset-name" onClick={() => onOpenGroup(g.paths)}>
-                {g.name} ({g.paths.length})
-              </span>
-              <button type="button" onClick={() => onRemoveGroup(g.name)}>×</button>
-            </div>
+            <Tooltip key={g.name} label={`${g.paths.length} file${g.paths.length === 1 ? '' : 's'}`} description={g.paths.map(basename).join(', ')}>
+              <div
+                className="preset-chip"
+                onContextMenu={(e) => handleContextMenu(e, g)}
+              >
+                <span className="preset-name" onClick={() => onOpenGroup(g.paths)}>
+                  {g.name} ({g.paths.length})
+                </span>
+                <button type="button" onClick={() => onRemoveGroup(g.name)}>×</button>
+              </div>
+            </Tooltip>
           ))}
         </div>
       )}

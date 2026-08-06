@@ -8,6 +8,7 @@ import { LogHeader } from './LogHeader.jsx';
 import { FindBar } from './FindBar.jsx';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 export const EntryView = forwardRef(function EntryView({
   buffer, ui, status, fontSize,
@@ -166,15 +167,16 @@ export const EntryView = forwardRef(function EntryView({
         {compiled.error && <span className="jql-error">{compiled.error}</span>}
         {paused && <span className="paused-hint">Paused</span>}
         {timeRange && (
-          <button
-            type="button"
-            className="time-range-chip"
-            onClick={() => onChangeUi?.({ timeRange: null })}
-            title="Clear the histogram's time-range selection (independent of the JQL filter)."
-          >
-            <span>{formatTimeShort(new Date(timeRange.start).toISOString())} – {formatTimeShort(new Date(timeRange.end).toISOString())}</span>
-            <X size={11} strokeWidth={2} />
-          </button>
+          <Tooltip label="Clear time-range selection" description="Independent of the JQL filter — this only affects the histogram's own zoom.">
+            <button
+              type="button"
+              className="time-range-chip"
+              onClick={() => onChangeUi?.({ timeRange: null })}
+            >
+              <span>{formatTimeShort(new Date(timeRange.start).toISOString())} – {formatTimeShort(new Date(timeRange.end).toISOString())}</span>
+              <X size={11} strokeWidth={2} />
+            </button>
+          </Tooltip>
         )}
       </div>
       <LogHeader

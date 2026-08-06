@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 // Browser-style find-in-view bar: takes the same JQL the filter box does,
 // but never removes lines — it only highlights matches (within whatever the
@@ -26,17 +27,18 @@ export function FindBar({ query, onQueryChange, caseSensitive, onToggleCaseSensi
         }}
       />
       <span className="find-bar-count">{query.trim() ? `${matchCount ? currentIndex + 1 : 0}/${matchCount}` : ''}</span>
-      <button type="button" title="Previous match (Shift+Enter)" onClick={onPrev} disabled={!matchCount}>↑</button>
-      <button type="button" title="Next match (Enter)" onClick={onNext} disabled={!matchCount}>↓</button>
-      <button
-        type="button"
-        className={caseSensitive ? 'active' : ''}
-        title="Case-sensitive"
-        onClick={onToggleCaseSensitive}
-      >
-        Aa
-      </button>
-      <button type="button" title="Close (Esc)" onClick={onClose}>×</button>
+      <Tooltip label="Previous match" description="Shift+Enter"><button type="button" onClick={onPrev} disabled={!matchCount}>↑</button></Tooltip>
+      <Tooltip label="Next match" description="Enter"><button type="button" onClick={onNext} disabled={!matchCount}>↓</button></Tooltip>
+      <Tooltip label="Case-sensitive">
+        <button
+          type="button"
+          className={caseSensitive ? 'active' : ''}
+          onClick={onToggleCaseSensitive}
+        >
+          Aa
+        </button>
+      </Tooltip>
+      <Tooltip label="Close" description="Esc"><button type="button" onClick={onClose}>×</button></Tooltip>
     </div>
   );
 }

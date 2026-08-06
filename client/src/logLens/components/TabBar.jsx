@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 function basename(p) {
   if (!p) return '(no file)';
@@ -123,23 +124,28 @@ export function TabBar({
               onContextMenu={(e) => handleContextMenu(e, tab, index)}
               title={tab.kind === 'api' ? `${tab.environment}: ${tabLabel(tab)}` : (tab.file || '')}
             >
-              <span className={`status-dot status-${tab.status}`} title={STATUS_LABEL[tab.status] || tab.status} />
+              <Tooltip label={STATUS_LABEL[tab.status] || tab.status}>
+                <span className={`status-dot status-${tab.status}`} />
+              </Tooltip>
               <span className="tab-label">{tabLabel(tab)}</span>
               {attention > 0 && (
-                <span className="tab-attention" title={`${attention} error/warn line${attention === 1 ? '' : 's'} since you last looked`}>
-                  <AlertCircle size={11} strokeWidth={2} />
-                  {attention > 1 ? attention : ''}
-                </span>
+                <Tooltip label={`${attention} error/warn line${attention === 1 ? '' : 's'}`} description="Since you last looked at this tab.">
+                  <span className="tab-attention">
+                    <AlertCircle size={11} strokeWidth={2} />
+                    {attention > 1 ? attention : ''}
+                  </span>
+                </Tooltip>
               )}
               {isQuiet && (
-                <span
-                  className="tab-quiet"
-                  title={`No new lines in ${formatQuiet(quietMs)} — still watching. Click to dismiss.`}
-                  onClick={(e) => { e.stopPropagation(); setDismissedAt((prev) => ({ ...prev, [tab.id]: lastLineAt })); }}
-                >
-                  <Clock size={10} strokeWidth={1.75} />
-                  quiet {formatQuiet(quietMs)}
-                </span>
+                <Tooltip label={`No new lines in ${formatQuiet(quietMs)}`} description="Still watching. Click to dismiss.">
+                  <span
+                    className="tab-quiet"
+                    onClick={(e) => { e.stopPropagation(); setDismissedAt((prev) => ({ ...prev, [tab.id]: lastLineAt })); }}
+                  >
+                    <Clock size={10} strokeWidth={1.75} />
+                    quiet {formatQuiet(quietMs)}
+                  </span>
+                </Tooltip>
               )}
               <button
                 type="button"
