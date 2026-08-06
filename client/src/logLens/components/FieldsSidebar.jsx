@@ -164,7 +164,7 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
                 items={selected}
                 getPath={(f) => f.name}
                 searchQuery={search}
-                flat={flatView}
+                flat
                 expanded={expandedPaths}
                 onToggleExpand={toggleExpand}
                 renderLeaf={renderLeaf(true)}
