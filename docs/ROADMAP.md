@@ -49,12 +49,25 @@ no such prior spec; they're native to this codebase.
   presets/pinned lines/column headers.
 - **Send to JSON Lens** — a line's context menu can hand its (pretty-printed, if parseable)
   content straight to a new JSON Lens tab.
-- **Time histogram** — a collapsible, display-only bar strip (Toolbar's view-options menu toggles
-  it) showing log volume over time, bucketed from `ownTimestamp` on whatever's currently
+- **Time histogram** — a collapsible bar strip (Toolbar's view-options menu toggles it, visible by
+  default for a first-time user while still respecting anyone who'd already toggled it off)
+  showing log volume over time, bucketed from `ownTimestamp` on whatever's currently
   filtered/on-screen (not the raw buffer), so a burst of activity is visible at a glance. Live-
   updating with streamed lines and filter changes, freezes in step with the tab's own Pause, and
-  makes its buffered-lines-only scope explicit rather than implying full-file coverage.
-  Deliberately no drag-to-select/click-to-filter in this pass — display only.
+  makes its buffered-lines-only scope explicit rather than implying full-file coverage. Now
+  Kibana-Discover-flavored:
+  - Each bucket is **stacked by log level** (error/warn/info/debug, `highlight.js`'s `levelClass`,
+    the same `--error`/`--warn`/`--info`/`--debug` tokens used everywhere else), not just a plain
+    volume bar.
+  - **Adjustable bucket interval** — Auto (span-based, snapped to a "nice" interval the same way
+    Kibana's own default does) or a manual override from a small dropdown (1s through 1d).
+  - **Drag-to-select a time range** (or click a single bar) narrows the tab's view to that window.
+    Implemented as a second, independent filtering axis in `filter/compile.js` — a `timeRange`
+    ANDed onto the JQL match rather than injected into the query string — so it composes with
+    whatever's already typed in the filter box instead of replacing it, and has its own reset
+    control (in the histogram's header and as a chip in the log view's info bar) distinct from
+    clearing the JQL query. The histogram's own bars keep charting the full JQL-filtered picture
+    regardless of an active time-range selection, so adjusting/replacing it stays easy.
 - **Copy/export filtered lines** — the "More" menu's new Export section copies (clipboard) or
   downloads (`.txt` blob) exactly the currently filtered/on-screen lines — same
   `compileQuery`/pause-freeze computation as the time histogram, so it's always what you're
