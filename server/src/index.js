@@ -3,14 +3,14 @@ import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { ENV_FILE, config } from './config.js';
-import { restoreFromState, createTab, allTabs } from './tabs/registry.js';
-import tabRoutes from './routes/tabs.js';
-import browseRoutes from './routes/browse.js';
-import eventRoutes from './routes/events.js';
-import settingsRoutes from './routes/settings.js';
-import credentialsRoutes from './routes/credentials.js';
-import esFieldRoutes from './routes/esFields.js';
-import jsonLensRoutes from './routes/jsonLens.js';
+import { restoreFromState, createTab, allTabs } from './logLens/tabs/registry.js';
+import tabRoutes from './logLens/routes/tabs.js';
+import browseRoutes from './logLens/routes/browse.js';
+import eventRoutes from './logLens/routes/events.js';
+import settingsRoutes from './logLens/routes/settings.js';
+import credentialsRoutes from './logLens/routes/credentials.js';
+import esFieldRoutes from './logLens/routes/esFields.js';
+import jsonLensRoutes from './jsonLens/routes.js';
 
 dotenv.config({ path: ENV_FILE, quiet: true });
 
