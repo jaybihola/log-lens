@@ -17,7 +17,9 @@ between them hides one and shows the other via CSS rather than unmounting, so ne
 tabs/buffers/SSE connection when you're not looking at it. See
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how that (and everything else) actually works,
 and [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's built vs. still planned (a third tool, HTTP
-Lens — a Postman-style HTTP client — is scoped but not yet built).
+Lens — a Postman-style HTTP client — is scoped but not yet built). The codebase is deliberately
+split to support more than one person/agent working on it at once — see
+[`docs/PARALLEL_AGENTS.md`](docs/PARALLEL_AGENTS.md).
 
 Log Lens is a ground-up, better-organized rewrite of an earlier single-file prototype (kept for
 reference under `local/references/log-viewer/`, not part of this app, not tracked in git).
@@ -186,7 +188,7 @@ log-lens/
 │       ├── shared/                  # components/, hooks/, render/, api/ — reusable, no tool-specific logic
 │       ├── logLens/                  # LogViewerApp.jsx + its own components/, hooks/, filter/, render/, api/, LogLens.css
 │       └── jsonLens/                  # JsonFormatterApp.jsx + its own components/, hooks/, api/, JsonLens.css
-└── docs/                  # ARCHITECTURE.md, ROADMAP.md, JQL.md, API.md, PERSISTENCE.md
+└── docs/                  # ARCHITECTURE.md, ROADMAP.md, JQL.md, API.md, PERSISTENCE.md, PARALLEL_AGENTS.md
 ```
 
 Persisted state lives outside the repo, in the home directory:
