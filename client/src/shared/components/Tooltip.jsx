@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 const SHOW_DELAY_MS = 350;
 
@@ -8,6 +9,15 @@ const SHOW_DELAY_MS = 350;
 // explain what they do). Wraps a single child; positions itself relative to
 // that child (below by default, or to the right — see `placement`) and
 // clamps into the viewport the same way ContextMenu does.
+//
+// The panel itself is portaled to document.body — required, same rationale
+// as ContextMenu.jsx/Dropdown.jsx (see docs/ARCHITECTURE.md): a tooltip
+// triggered from inside a transform-positioned ancestor (e.g. a virtualized
+// log line — EntryView.jsx positions each row with `transform:
+// translateY(...)`) would otherwise have its `position: fixed` panel
+// resolved against that transformed ancestor instead of the viewport,
+// landing it off-screen or in the wrong spot instead of next to the button
+// that triggered it.
 //
 // Dismisses the instant its child is clicked (a lingering tooltip next to
 // an action that just fired, or a dropdown that just opened, reads as a
@@ -72,11 +82,12 @@ export function Tooltip({ label, description, children, placement = 'bottom', di
       onClickCapture={hide}
     >
       {children}
-      {open && (
+      {open && createPortal(
         <div ref={panelRef} className="tooltip-panel" style={{ left: pos.left, top: pos.top, visibility: pos.ready ? 'visible' : 'hidden' }}>
           <div className="tooltip-label">{label}</div>
           {description && <div className="tooltip-desc">{description}</div>}
-        </div>
+        </div>,
+        document.body,
       )}
     </span>
   );
