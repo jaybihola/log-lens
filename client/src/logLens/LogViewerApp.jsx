@@ -121,9 +121,9 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   // a `field:value` JQL token to whatever's already in the filter box
   // (quoting the value if it has whitespace/parens/quotes the tokenizer
   // would otherwise choke on) rather than clobbering an in-progress query.
-  const handleApplyFieldFilter = (field, value) => {
+  const handleApplyFieldFilter = (field, value, negate = false) => {
     const needsQuotes = /[\s"()]/.test(value) || value === '';
-    const token = `${field}:${needsQuotes ? `"${value}"` : value}`;
+    const token = `${negate ? '-' : ''}${field}:${needsQuotes ? `"${value}"` : value}`;
     const current = activeUi.filterQuery.trim();
     updateActiveTabUi({ filterQuery: current ? `${current} ${token}` : token });
     filterInputRef.current?.focus();
@@ -405,6 +405,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               findOpen={findOpen}
               onCloseFind={() => setFindOpen(false)}
               onSendToJsonLens={onSendToJsonLens}
+              onApplyFilter={handleApplyFieldFilter}
             />
           </div>
         </div>
