@@ -457,14 +457,30 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .expanded-doc-tab { background: transparent; border: 1px solid transparent; border-bottom: none; border-radius: var(--radius-sm) var(--radius-sm) 0 0; color: var(--dim); font-size: var(--text-sm); padding: var(--space-1-5) var(--space-3); cursor: pointer; }
 .expanded-doc-tab:hover { color: var(--fg); }
 .expanded-doc-tab.active { background: var(--panel-sunken); border-color: var(--border); color: var(--accent); font-weight: 600; }
-.expanded-doc-body { max-height: 420px; overflow: auto; }
-.field-table { width: 100%; border-collapse: collapse; font-family: 'SF Mono', Consolas, monospace; font-size: var(--text-sm); }
-.field-table tr { border-bottom: 1px solid var(--border); }
+.expanded-doc-body { max-height: 420px; overflow: auto; padding: var(--space-1-5); }
+/* CodeViewer.jsx's JsonEditor already carries its own border+radius (see
+   App.css's .json-editor) — inside .expanded-doc, which has its own, that
+   doubled up into two flush nested rounded boxes. This container already
+   provides the chrome, so the editor here goes borderless/flush. */
+.expanded-doc-body .json-editor { border: none; border-radius: 0; }
+.field-table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  font-family: 'SF Mono', Consolas, monospace; font-size: var(--text-sm);
+}
+.field-table tr { border-bottom: 1px solid var(--border-strong); }
 .field-table tr:last-child { border-bottom: none; }
 .field-table tr:hover { background: var(--panel-2); }
-.field-table th { width: 200px; max-width: 300px; text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); color: var(--accent); font-weight: 600; white-space: pre-wrap; word-break: break-word; }
+/* No fixed width — a short key like "Time"/"Level"/"host" should hug its
+   own content instead of stretching a wide fixed column and leaving a big
+   empty gutter before the value starts; max-width only caps the rare very
+   long dotted path so it wraps instead of pushing the value column away. */
+.field-table th {
+  width: 1%; max-width: 260px; text-align: left; vertical-align: top;
+  padding: var(--space-2) var(--space-3); color: var(--accent); font-weight: 600;
+  white-space: pre-wrap; word-break: break-word;
+}
 .field-table td { text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-.field-table .field-actions-cell { width: 116px; white-space: nowrap; padding: var(--space-1) var(--space-2); }
+.field-table .field-actions-cell { width: 1%; white-space: nowrap; padding: var(--space-1) var(--space-2); }
 .field-actions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s; }
 .field-table tr:hover .field-actions, .field-table tr:focus-within .field-actions { opacity: 1; }
 .field-action-btn {
