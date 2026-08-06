@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import CodeMirror, { EditorView } from '@uiw/react-codemirror';
 import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
@@ -6,6 +6,7 @@ import { HighlightStyle, syntaxHighlighting, syntaxTree, foldAll, unfoldAll } fr
 import { linter, lintGutter } from '@codemirror/lint';
 import { undo, redo } from '@codemirror/commands';
 import { openSearchPanel } from '@codemirror/search';
+import { Decoration } from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 import { locateJsonError } from '../../jsonLens/jsonUtils.js';
 
@@ -117,9 +118,18 @@ function jsonLinter(view) {
 // so a toolbar living outside this component (JsonFormatterApp's) can still
 // drive them. Optional: callers that don't pass a ref (RemoteQueryBody,
 // CodeViewer) are unaffected.
+//
+// `highlightRanges`/`activeHighlightRange` are both optional and additive —
+// JSON Lens's own find-in-view bar (JsonFindBar.jsx) feeds them in so Code
+// sub-mode's matches look and behave like Table sub-mode's, without needing
+// CodeMirror's separate built-in search panel (still available via the
+// `find` ref method above, for Edit mode's find/replace). Any range whose
+// [from, to) matches `activeHighlightRange` gets scrolled into view and an
+// extra "current" class, mirroring Log Lens's find-hit/find-current split.
 export const JsonEditor = forwardRef(function JsonEditor({
   value, onChange, readOnly = false, language = 'json', wrap = false, fontSize = 12.5,
   height, minHeight = '80px', maxHeight = '420px',
+  highlightRanges, activeHighlightRange,
 }, ref) {
   const cmRef = useRef(null);
 
@@ -140,6 +150,35 @@ export const JsonEditor = forwardRef(function JsonEditor({
     focus: () => cmRef.current?.view?.focus(),
   }), []);
 
+  // Selecting (rather than merely scrolling to) the active range is what
+  // gets CodeMirror to actually scroll it into view — done as a real
+  // dispatch rather than an `EditorSelection` prop so it doesn't fight the
+  // controlled `value`/`onChange` on every render, only when the active
+  // match itself changes. Deliberately doesn't call `.focus()`: this fires
+  // while the find bar's input has focus, and stealing it back would break
+  // typing/Enter-to-advance.
+  useEffect(() => {
+    const v = cmRef.current?.view;
+    if (!v || !activeHighlightRange) return;
+    v.dispatch({
+      selection: { anchor: activeHighlightRange.from, head: activeHighlightRange.to },
+      scrollIntoView: true,
+    });
+  }, [activeHighlightRange]);
+
+  const highlightExtension = useMemo(() => {
+    if (!highlightRanges || !highlightRanges.length) return [];
+    const decorations = highlightRanges
+      .filter((r) => r.to > r.from)
+      .map((r) => ({
+        r,
+        active: !!activeHighlightRange && r.from === activeHighlightRange.from && r.to === activeHighlightRange.to,
+      }))
+      .sort((a, b) => a.r.from - b.r.from)
+      .map(({ r, active }) => Decoration.mark({ class: active ? 'cm-json-find-hit cm-json-find-current' : 'cm-json-find-hit' }).range(r.from, r.to));
+    return [EditorView.decorations.of(Decoration.set(decorations, true))];
+  }, [highlightRanges, activeHighlightRange]);
+
   return (
     <CodeMirror
       ref={cmRef}
@@ -151,6 +190,7 @@ export const JsonEditor = forwardRef(function JsonEditor({
         syntaxHighlighting(jsonHighlightStyle),
         ...(language === 'json' ? [linter(jsonLinter), lintGutter()] : []),
         ...(wrap ? [EditorView.lineWrapping] : []),
+        ...highlightExtension,
       ]}
       editable={!readOnly}
       readOnly={readOnly}

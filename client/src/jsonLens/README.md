@@ -11,7 +11,7 @@ save/scratch/discard flow, the filesystem hook) — this file is just a map.
 | File | What |
 |---|---|
 | `JsonFormatterApp.jsx` | The tool's entire top-level component — tabs, toolbar, Edit/View mode toggle, field-filter, editor, and the save/close-tab decision-modal state machine |
-| `jsonUtils.js` | Pure logic: JSON validation/error-location, format/minify/sort-keys, fuzzy field search, field-filter pruning, escape/unescape, table-view helpers (value typing/preview/parsing) |
+| `jsonUtils.js` | Pure logic: JSON validation/error-location, format/minify/sort-keys, fuzzy field search, field-filter pruning, escape/unescape, table-view helpers (value typing/preview/parsing), find-in-view matchers (`findTextOccurrences` for Code sub-mode, `findJsonMatches` for Table sub-mode) |
 | `JsonLens.css` | This tool's own styling |
 
 ## `components/`
@@ -20,7 +20,8 @@ save/scratch/discard flow, the filesystem hook) — this file is just a map.
 |---|---|
 | `JsonFileSidebar.jsx` | Folder tree + scratches list, built on `shared/components/FieldTree.jsx` |
 | `JsonTabBar.jsx` | JSON Lens's tab strip — dirty dot, rename, same context-menu-stays-active pattern as Log Lens's `TabBar` |
-| `JsonTableView.jsx` | View mode's tabular sub-mode — key/type/value rows, nested objects/arrays expand in place (each row owns its own expand state, no path-keyed Set to maintain) |
+| `JsonTableView.jsx` | View mode's Table sub-mode — key/type/value rows, nested objects/arrays expand in place (each row owns its own expand state, no path-keyed Set to maintain). When the find bar is open, also highlights matching key/value cells, auto-expands ancestor rows so a stepped-to match is never hidden inside a collapsed row, and scrolls the current match into view |
+| `JsonFindBar.jsx` | View mode's non-destructive find-in-view bar (query, `n/total`, next/prev, case-sensitivity toggle) — mirrors Log Lens's own `FindBar.jsx` shape/behavior, adapted to a plain substring search over one document instead of a JQL query over a scrolling log stream. Distinct from the field-filter search box below it: find only highlights/steps through matches, the field filter actually prunes what's shown |
 
 ## Edit / View mode
 
@@ -50,6 +51,38 @@ Field-filtering itself (the fuzzy search + `selectedFields` on the tab) is
 unchanged — it now only ever applies while in View mode, across both
 sub-modes; switching back to Edit always shows the real, unfiltered,
 editable `content`.
+
+## Find-in-view vs. field-filter
+
+View mode has two distinct search affordances that are easy to conflate but
+solve different problems:
+
+- **Field-filter** (the fuzzy search box + chips) *prunes* the displayed
+  JSON down to just the selected fields — destructive to what's shown
+  (though never to the tab's real `content`).
+- **Find** (the toolbar's Search button, or Cmd/Ctrl+F while in View mode —
+  opens `JsonFindBar.jsx`) never removes anything; it highlights every
+  plain-substring match in whatever's currently displayed and lets you step
+  through them with Enter/Shift+Enter or the bar's own next/prev buttons,
+  same interaction shape as Log Lens's own find-in-view bar.
+
+Find's matching is computed differently per View sub-mode, in
+`JsonFormatterApp.jsx`:
+
+- **Code** — `findTextOccurrences` (`jsonUtils.js`) finds plain-text
+  offsets in the displayed string; `JsonEditor.jsx` takes those as an
+  optional `highlightRanges`/`activeHighlightRange` prop pair, rendering
+  them as CodeMirror mark decorations and dispatching a selection +
+  `scrollIntoView` at the active one. Both props are additive/optional —
+  every other `JsonEditor` caller (Log Lens's `CodeViewer.jsx`,
+  `RemoteQueryBody.jsx`) is unaffected.
+- **Table** — `findJsonMatches` (`jsonUtils.js`) walks the *parsed* value in
+  the same depth-first order `JsonTableView.jsx` renders it, producing
+  `{path, field}` matches (`field` is `'key'` or `'value'`) rather than text
+  offsets, since a table cell isn't a text offset — `JsonTableView.jsx`
+  turns those into cell highlighting, forces open just the active match's
+  ancestor rows (not the whole match set, so stepping doesn't pry the whole
+  tree open at once), and scrolls the active row into view.
 
 ## `hooks/`
 
