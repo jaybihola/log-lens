@@ -70,7 +70,7 @@ export function JsonToolbar({
       {mode === 'edit' && (
         <>
           <Tooltip label="Save" description={activeTab?.origin === 'new' ? 'Choose where to save this tab.' : 'Write this tab back to where it came from.'}>
-            <button type="button" className="icon-btn" onClick={onSave} disabled={!activeTab || !dirty}>
+            <button type="button" className={dirty ? 'icon-btn btn-primary' : 'icon-btn'} onClick={onSave} disabled={!activeTab || !dirty}>
               <Save size={15} strokeWidth={1.75} />
             </button>
           </Tooltip>
