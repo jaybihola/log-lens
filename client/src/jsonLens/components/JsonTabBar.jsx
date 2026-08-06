@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
 import { isTabDirty } from '../hooks/useJsonTabs.js';
@@ -14,16 +14,45 @@ function downloadTab(tab) {
   URL.revokeObjectURL(url);
 }
 
-// Leaner sibling of the log viewer's TabBar — no server-backed status dot,
-// but adds double-click-to-rename since a JSON tab has no file path to fall
-// back on for its label, plus a dirty dot for tabs whose content diverges
-// from what's actually saved (to a file, a scratch, or nowhere at all yet).
+const SCROLL_STEP = 200;
+
+// Leaner sibling of the log viewer's TabBar — no server-backed status dot or
+// attention/quiet badges, but adds double-click-to-rename since a JSON tab
+// has no file path to fall back on for its label, plus a dirty dot for tabs
+// whose content diverges from what's actually saved (to a file, a scratch,
+// or nowhere at all yet). Overflow-scroll behavior (canScrollLeft/Right,
+// the ResizeObserver, the scroll buttons) mirrors TabBar.jsx exactly.
 export function JsonTabBar({
   tabs, activeTabId, onActivate, onRequestClose, onAdd, onRename, onDuplicate, onRevert, onCloseOthers, onCloseToRight,
 }) {
   const [editingId, setEditingId] = useState(null);
   const [draftName, setDraftName] = useState('');
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const { menu, openMenu, closeMenu, isMenuActive } = useContextMenu();
+
+  const updateScrollState = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    const observer = new ResizeObserver(updateScrollState);
+    observer.observe(el);
+    el.addEventListener('scroll', updateScrollState);
+    return () => {
+      observer.disconnect();
+      el.removeEventListener('scroll', updateScrollState);
+    };
+  }, [tabs.length]);
+
+  const scrollBy = (delta) => scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
 
   const startRename = (tab) => { setEditingId(tab.id); setDraftName(tab.name); };
   const commitRename = () => {
@@ -48,7 +77,10 @@ export function JsonTabBar({
 
   return (
     <div className={menu ? 'tab-bar menu-open' : 'tab-bar'}>
-      <div className="tab-scroll">
+      {canScrollLeft && (
+        <button type="button" className="tab-scroll-btn" onClick={() => scrollBy(-SCROLL_STEP)}>‹</button>
+      )}
+      <div className="tab-scroll" ref={scrollRef}>
         {tabs.map((tab, index) => (
           <div
             key={tab.id}
@@ -85,6 +117,9 @@ export function JsonTabBar({
           </div>
         ))}
       </div>
+      {canScrollRight && (
+        <button type="button" className="tab-scroll-btn" onClick={() => scrollBy(SCROLL_STEP)}>›</button>
+      )}
       <button type="button" className="tab-add" onClick={onAdd}>+</button>
       {menu && <ContextMenu {...menu} onClose={closeMenu} />}
     </div>
