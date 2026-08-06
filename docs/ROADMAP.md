@@ -55,6 +55,31 @@ no such prior spec; they're native to this codebase.
   updating with streamed lines and filter changes, freezes in step with the tab's own Pause, and
   makes its buffered-lines-only scope explicit rather than implying full-file coverage.
   Deliberately no drag-to-select/click-to-filter in this pass — display only.
+- **Copy/export filtered lines** — the "More" menu's new Export section copies (clipboard) or
+  downloads (`.txt` blob) exactly the currently filtered/on-screen lines — same
+  `compileQuery`/pause-freeze computation as the time histogram, so it's always what you're
+  actually looking at, not the raw unfiltered buffer.
+- **Background-tab attention signal** — an error/warn-level line arriving on a Log Lens tab you're
+  not currently looking at badges that tab in the tab bar and flashes `document.title` until you
+  activate it; resets the moment you do, no persistence.
+- **Silence/stalled-tailing indicator** — a soft, dismissable "quiet Xm" label appears on a tab
+  that's still `watching` but hasn't produced a new line in a few minutes, derived from SSE
+  line-arrival timestamps; never shown for `missing`/`error`/`idle`/`waiting` tabs, and
+  automatically re-arms after the next line if dismissed.
+- **Multi-select file open** — the file picker (`shared/components/FilePickerBody.jsx`) gained an
+  opt-in `multiple` prop (Log Lens only — JSON Lens's single-file callers are unaffected): checkbox
+  each file you want, then open them all as separate tabs in one action instead of one
+  round-trip per file.
+- **Saved tab groups** — name and persist the current set of open file tabs (`useTabGroups.js`,
+  same localStorage-backed pattern as saved filter presets) and reopen the whole group in one
+  click from the new header "Tab groups" menu — handy for a docker-compose stack's several log
+  files.
+- **Per-line outlier time-gap flag** — `EntryView` flags a line whose gap since the previous
+  *visible* (filtered) line is a statistical outlier (a fixed floor combined with a multiple of the
+  view's own median gap) with a small inline "+Xm Ys" chip. Deliberately not annotating every
+  line — the time histogram already covers coarse-grained "where are the gaps"; this only adds the
+  complementary signal of "how much did the current filter just skip over, between these two
+  specific lines," and only when it's unusual enough to be worth a glance.
 
 ## Done — JSON Lens
 
