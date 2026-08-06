@@ -5,8 +5,8 @@ import { SidebarResizeHandle } from '../../shared/components/SidebarResizeHandle
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
 import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
 import { Tooltip } from '../../shared/components/Tooltip.jsx';
-import { FieldTree } from '../../shared/components/FieldTree.jsx';
-import { buildFieldTree, collectFolderPaths } from '../../shared/render/fieldTree.js';
+import { FieldTree, TreeGuides } from '../../shared/components/FieldTree.jsx';
+import { buildFieldTree, collectFolderPaths, treeIndent } from '../../shared/render/fieldTree.js';
 
 const SHOW_DELAY_MS = 350;
 // Grace period before hiding, so moving the cursor from the row to the
@@ -230,12 +230,13 @@ function FieldRow({ field, segment, depth, active, menuActive, onClick, onHover,
         active ? 'active' : '',
         menuActive ? 'menu-target' : '',
       ].filter(Boolean).join(' ')}
-      style={{ paddingLeft: 8 + depth * 14 }}
+      style={{ paddingLeft: treeIndent(depth) }}
       onClick={onClick}
       onMouseEnter={(e) => onHover(e.currentTarget.getBoundingClientRect())}
       onMouseLeave={onUnhover}
       onContextMenu={onContextMenu}
     >
+      <TreeGuides depth={depth} />
       <span className="fields-sidebar-row-name">{segment}</span>
       <span className="fields-sidebar-row-type">{field.type}</span>
       <span className="fields-sidebar-row-toggle">
