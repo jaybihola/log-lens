@@ -103,7 +103,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1-5);
-  background: transparent;
+  background: var(--panel-2);
   border: 1px solid transparent;
   border-radius: var(--radius-pill);
   padding: var(--space-1-5) 7px var(--space-1-5) var(--space-3);
@@ -113,7 +113,7 @@
   white-space: nowrap;
   flex: 0 0 auto;
 }
-.tab-bar:not(.menu-open) .tab:hover, .tab.menu-target { background: var(--panel-2); }
+.tab-bar:not(.menu-open) .tab:hover, .tab.menu-target { background: var(--panel-3); }
 .tab.active { background: rgba(var(--accent-rgb), 0.15); color: var(--accent); font-weight: 600; }
 .tab-label { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .tab-dirty-dot { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
