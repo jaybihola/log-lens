@@ -45,6 +45,30 @@
 .json-editor-body .json-editor { flex: 1; min-width: 0; }
 .json-editor-body .cm-editor { height: 100%; }
 
+/* ---- find-in-view bar (JsonFindBar.jsx) — View mode only, deliberately
+   its own control rather than sharing the field-filter search box below:
+   this only highlights/steps through matches, never removes anything.
+   Mirrors Log Lens's own .find-bar (see LogLens.css) but kept as JSON
+   Lens's own rules per the directory split. ---- */
+
+.json-find-bar {
+  display: flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  margin: 8px 12px 0; padding: 6px 8px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+}
+.json-find-bar-input { width: 320px; max-width: 100%; font-family: monospace; }
+.json-find-bar-count { min-width: 44px; text-align: center; color: var(--dim); font-size: 11px; font-family: monospace; }
+.json-find-bar button { width: 24px; height: 24px; padding: 0; line-height: 1; }
+
+/* Table sub-mode's cell-level highlight (HighlightedText in JsonTableView.jsx). */
+.json-find-hit { background: rgba(var(--warn-rgb), 0.45); border-radius: 2px; }
+.json-find-hit.json-find-current { background: var(--flash); box-shadow: 0 0 0 1px var(--warn); }
+.json-table-row-current { background: var(--flash) !important; }
+
+/* Code sub-mode's highlight (a CodeMirror mark decoration — see JsonEditor.jsx). */
+.json-editor .cm-json-find-hit { background: rgba(var(--warn-rgb), 0.45); border-radius: 2px; }
+.json-editor .cm-json-find-hit.cm-json-find-current { background: var(--flash); box-shadow: 0 0 0 1px var(--warn); }
+
 /* ---- View mode, table sub-view (JsonTableView.jsx) ---- */
 
 .json-table-view {

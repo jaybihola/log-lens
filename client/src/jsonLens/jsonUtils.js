@@ -235,3 +235,91 @@ export function parseJsonForTable(text) {
     return { ok: false, error: e.message };
   }
 }
+
+// The exact text JsonTableView's value cell renders for a scalar — shared
+// with the find-in-view matcher below so a highlighted substring always
+// lines up with what's actually on screen.
+export function formatScalarText(value, type) {
+  if (type === 'string') return `"${value}"`;
+  if (type === 'null') return 'null';
+  return String(value);
+}
+
+// A container's immediate children as {rawKey, displayKey, value} — rawKey
+// is the real object key or array index (what a match path is built from),
+// displayKey is what the table's key column actually renders (arrays get
+// bracket notation). Shared by JsonTableView's rendering and the matcher
+// below so the two can never drift apart.
+export function jsonChildEntries(value) {
+  if (Array.isArray(value)) return value.map((item, i) => ({ rawKey: i, displayKey: `[${i}]`, value: item }));
+  if (value && typeof value === 'object') return Object.entries(value).map(([k, v]) => ({ rawKey: k, displayKey: k, value: v }));
+  return [];
+}
+
+// ---- find-in-view helpers (non-destructive — never remove/reorder content,
+// only report where matches are so a caller can highlight/step through
+// them) — see JsonFindBar.jsx and its use in JsonFormatterApp/JsonTableView.
+
+// Every non-overlapping occurrence of `query` as a plain substring of `text`
+// — used for Code sub-mode, where "what's displayed" is just editor text.
+export function findTextOccurrences(text, query, caseSensitive) {
+  if (!text || !query) return [];
+  const hay = caseSensitive ? text : text.toLowerCase();
+  const needle = caseSensitive ? query : query.toLowerCase();
+  if (!needle) return [];
+  const out = [];
+  let idx = hay.indexOf(needle);
+  while (idx !== -1) {
+    out.push({ from: idx, to: idx + needle.length });
+    idx = hay.indexOf(needle, idx + needle.length);
+  }
+  return out;
+}
+
+// Stable, collision-free identifier for a match path — used both to key
+// React lists and to look up "does this row have a match" from a Set/Map.
+export function jsonPathKey(path) {
+  return JSON.stringify(path);
+}
+
+export function jsonMatchKey(match) {
+  return `${jsonPathKey(match.path)}|${match.field}`;
+}
+
+// Table sub-mode's matcher: walks the parsed value in the same order
+// JsonTableView renders it (depth-first, each container's children right
+// after it), testing the same key/value text the table actually shows.
+// One match per matching key or scalar value — not one per in-text
+// occurrence — since stepping is "go to this cell," same granularity as
+// Log Lens's find bar stepping per line rather than per term hit. `path` is
+// the chain of rawKeys from the root to the matched node ([] for a bare
+// scalar document); `field` is 'key' or 'value'.
+export function findJsonMatches(value, query, caseSensitive) {
+  const trimmed = query?.trim();
+  if (!trimmed || value === undefined) return [];
+  const needle = caseSensitive ? trimmed : trimmed.toLowerCase();
+  const test = (text) => (caseSensitive ? text : text.toLowerCase()).includes(needle);
+  const matches = [];
+
+  function visitEntries(entries, path) {
+    for (const { rawKey, displayKey, value: v } of entries) {
+      const nodePath = [...path, rawKey];
+      if (test(displayKey)) matches.push({ path: nodePath, field: 'key' });
+      const type = getJsonValueType(v);
+      if (type === 'object' || type === 'array') {
+        const children = jsonChildEntries(v);
+        if (children.length) visitEntries(children, nodePath);
+      } else {
+        if (test(formatScalarText(v, type))) matches.push({ path: nodePath, field: 'value' });
+      }
+    }
+  }
+
+  const rootType = getJsonValueType(value);
+  if (rootType === 'object' || rootType === 'array') {
+    visitEntries(jsonChildEntries(value), []);
+  } else if (test(formatScalarText(value, rootType))) {
+    matches.push({ path: [], field: 'value' });
+  }
+  return matches;
+}

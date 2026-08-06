@@ -13,6 +13,7 @@ import { jsonLensApi } from './api/jsonLensClient.js';
 import { JsonTabBar } from './components/JsonTabBar.jsx';
 import { JsonFileSidebar } from './components/JsonFileSidebar.jsx';
 import { JsonTableView } from './components/JsonTableView.jsx';
+import { JsonFindBar } from './components/JsonFindBar.jsx';
 import { JsonEditor } from '../shared/components/JsonEditor.jsx';
 import { ContextMenu } from '../shared/components/ContextMenu.jsx';
 import { ConfirmModal } from '../shared/components/ConfirmModal.jsx';
@@ -22,7 +23,7 @@ import { Tooltip } from '../shared/components/Tooltip.jsx';
 import { EmptyState } from '../shared/components/EmptyState.jsx';
 import {
   filterJsonByFields, findMatchingFieldNames, formatJsonText, minifyJsonText, validateJson,
-  escapeJsonString, unescapeJsonString,
+  escapeJsonString, unescapeJsonString, parseJsonForTable, findTextOccurrences, findJsonMatches,
 } from './jsonUtils.js';
 
 const INDENT_OPTIONS = [
@@ -96,6 +97,19 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
   const [viewSubMode, setViewSubMode] = useState('code'); // 'code' | 'table'
   const isViewMode = mode === 'view';
 
+  // Find-in-view: View mode only (both sub-modes), and deliberately not the
+  // same thing as the field filter below — this never removes anything, it
+  // just highlights matches in whatever's currently displayed and lets you
+  // step through them. See JsonFindBar.jsx.
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findCaseSensitive, setFindCaseSensitive] = useState(false);
+  const [findIndex, setFindIndex] = useState(0);
+  useEffect(() => { if (!isViewMode) setFindOpen(false); }, [isViewMode]);
+  useEffect(() => { setFindOpen(false); }, [activeTabId]);
+  useEffect(() => { if (!findOpen) { setFindQuery(''); setFindIndex(0); } }, [findOpen]);
+  useEffect(() => { setFindIndex(0); }, [findQuery, findCaseSensitive, viewSubMode]);
+
   // Field filter: a search box (fuzzy, only applied on Enter) that finds
   // candidate field names, which then get added to `selectedFields` — the
   // exact set actually driving what's shown. Ambiguous searches (more than
@@ -132,6 +146,34 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
   // a side effect of `isFiltering`).
   const isReadOnly = isViewMode;
   const dirty = activeTab ? isTabDirty(activeTab) : false;
+
+  // Find matches are computed per sub-mode against whatever's actually
+  // displayed (the field-filtered text when a filter's active, same as
+  // copy/download already do) — Code sub-mode searches the raw text, Table
+  // sub-mode searches the parsed key/value tree so it can highlight cells
+  // and auto-expand ancestors rather than just text offsets.
+  const trimmedFindQuery = findQuery.trim();
+  const codeMatches = useMemo(
+    () => (findOpen && viewSubMode === 'code' ? findTextOccurrences(displayedText, trimmedFindQuery, findCaseSensitive) : []),
+    [findOpen, viewSubMode, displayedText, trimmedFindQuery, findCaseSensitive],
+  );
+  const tableParsed = useMemo(
+    () => (findOpen && viewSubMode === 'table' ? parseJsonForTable(displayedText) : null),
+    [findOpen, viewSubMode, displayedText],
+  );
+  const tableMatches = useMemo(
+    () => (tableParsed?.ok ? findJsonMatches(tableParsed.value, trimmedFindQuery, findCaseSensitive) : []),
+    [tableParsed, trimmedFindQuery, findCaseSensitive],
+  );
+  const findMatchCount = viewSubMode === 'table' ? tableMatches.length : codeMatches.length;
+  const clampedFindIndex = findMatchCount ? ((findIndex % findMatchCount) + findMatchCount) % findMatchCount : 0;
+  const activeTableMatch = viewSubMode === 'table' && tableMatches.length ? tableMatches[clampedFindIndex] : null;
+  const activeCodeRange = viewSubMode === 'code' && codeMatches.length ? codeMatches[clampedFindIndex] : null;
+
+  const gotoFindIndex = (i) => {
+    if (!findMatchCount) return;
+    setFindIndex(((i % findMatchCount) + findMatchCount) % findMatchCount);
+  };
 
   const addFields = (names) => {
     if (!activeTab) return;
@@ -373,6 +415,24 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
     return () => document.removeEventListener('keydown', handler);
   }, [active, activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Cmd/Ctrl+F opens the find-in-view bar — only in View mode, where it's
+  // the only find affordance (Edit mode keeps CodeMirror's own find/replace,
+  // bound to its own keymap on the editor itself). Capture phase + explicit
+  // stopPropagation so this wins over CodeMirror's default search keymap
+  // when the read-only editor happens to have focus.
+  useEffect(() => {
+    if (!active || !isViewMode) return undefined;
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        e.stopPropagation();
+        setFindOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handler, true);
+    return () => document.removeEventListener('keydown', handler, true);
+  }, [active, isViewMode]);
+
   // "Send to JSON Lens" from a Log Lens line — App.jsx queues one of these
   // and switches mode; consumed here as a fresh draft tab, then immediately
   // cleared so it can't re-fire (e.g. on an unrelated re-render).
@@ -532,8 +592,16 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
                 </Tooltip>
               </>
             )}
-            <Tooltip label="Find / Replace" description="Open the editor's search panel.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.find()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
+            <Tooltip
+              label={isViewMode ? 'Find in view' : 'Find / Replace'}
+              description={isViewMode ? "Highlight and step through matches — doesn't change what's shown (Cmd/Ctrl+F)." : "Open the editor's search panel."}
+            >
+              <button
+                type="button"
+                className={isViewMode && findOpen ? 'active icon-btn' : 'icon-btn'}
+                onClick={() => (isViewMode ? setFindOpen((v) => !v) : editorRef.current?.find())}
+                disabled={!activeTab}
+              >
                 <Search size={15} strokeWidth={1.75} />
               </button>
             </Tooltip>
@@ -692,9 +760,29 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
             </div>
           )}
 
+          {isViewMode && findOpen && (
+            <JsonFindBar
+              query={findQuery}
+              onQueryChange={setFindQuery}
+              caseSensitive={findCaseSensitive}
+              onToggleCaseSensitive={() => setFindCaseSensitive((v) => !v)}
+              matchCount={findMatchCount}
+              currentIndex={clampedFindIndex}
+              onNext={() => gotoFindIndex(clampedFindIndex + 1)}
+              onPrev={() => gotoFindIndex(clampedFindIndex - 1)}
+              onClose={() => setFindOpen(false)}
+            />
+          )}
+
           <div className="json-editor-body">
             {activeTab && isViewMode && viewSubMode === 'table' ? (
-              <JsonTableView text={displayedText} />
+              <JsonTableView
+                text={displayedText}
+                matches={tableMatches}
+                activeMatch={activeTableMatch}
+                query={trimmedFindQuery}
+                caseSensitive={findCaseSensitive}
+              />
             ) : activeTab && (
               <JsonEditor
                 ref={editorRef}
@@ -704,6 +792,8 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
                 wrap={wrap}
                 fontSize={fontSize}
                 height="100%"
+                highlightRanges={isViewMode && viewSubMode === 'code' ? codeMatches : undefined}
+                activeHighlightRange={activeCodeRange}
               />
             )}
           </div>

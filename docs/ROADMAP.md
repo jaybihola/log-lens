@@ -76,6 +76,16 @@ no such prior spec; they're native to this codebase.
   line only) and is where field-filtering becomes available. View has two sub-modes — **Code**
   (the same read-only CodeMirror rendering) and **Table** (`components/JsonTableView.jsx`, a real
   key/type/value table with nested objects/arrays expandable in place, not just highlighted text).
+- **Find-in-view** (`components/JsonFindBar.jsx`) — View mode only, same non-destructive
+  highlight-and-step shape as Log Lens's own find bar (query, `n/total`, next/prev,
+  case-sensitivity toggle, Cmd/Ctrl+F), explicitly kept separate from field-filtering: find only
+  highlights plain-substring matches in whatever's currently displayed and steps through them,
+  field-filter actually prunes what's shown. Works in both View sub-modes — Code sub-mode
+  highlights matches as CodeMirror mark decorations and scrolls to the active one (an additive
+  `highlightRanges`/`activeHighlightRange` prop pair on the shared `JsonEditor.jsx`, opt-in for
+  every other caller); Table sub-mode highlights matching key/value cells, auto-expands just the
+  active match's ancestor rows so it's never hidden inside a collapsed row, and scrolls the active
+  row into view.
 - Field-filtering: fuzzy-search a field name, disambiguate via a picker when it's ambiguous, view
   just the selected fields (read-only, View mode only) with the rest pruned but ancestor paths kept
   for context.
