@@ -4,6 +4,10 @@
    and jsonLens/JsonLens.css. */
 
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); flex: 0 0 auto; }
+/* Tooltip.jsx wraps its child in an extra span — these three badges are
+   direct flex children of .tab's own row, so the wrapper needs the same
+   flex-none sizing the badge itself used to declare directly. */
+.tab .tooltip-wrap { flex: 0 0 auto; }
 .status-dot.status-watching { background: var(--info); }
 .status-dot.status-missing { background: var(--error); }
 .status-dot.status-waiting { background: var(--dim); }
@@ -69,7 +73,8 @@
 .filter-clause-editor { display: flex; flex-direction: column; gap: var(--space-2); width: 260px; }
 .filter-clause-row { display: flex; flex-direction: column; gap: 3px; }
 .filter-clause-row label { font-size: var(--text-xs); color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; }
-.filter-clause-row input, .filter-clause-row select { width: 100%; font-family: monospace; }
+.filter-clause-row input, .filter-clause-row .dropdown-trigger { width: 100%; font-family: monospace; }
+.filter-clause-row .dropdown { width: 100%; }
 .filter-clause-row-values .fold-filter-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); align-items: center; }
 .filter-clause-actions { display: flex; justify-content: flex-end; gap: var(--space-1-5); margin-top: var(--space-1); }
 .filter-combine-toggle { display: flex; gap: var(--space-1); }
@@ -191,9 +196,8 @@
 }
 .time-histogram-reset:hover { background: rgba(var(--accent-rgb), 0.24); }
 .time-histogram-reset-label { font-family: inherit; opacity: 0.85; }
-.time-histogram-interval {
-  font-size: var(--text-xs); padding: 2px 5px; border-radius: 5px;
-  background: var(--panel-2); border: 1px solid var(--border); color: var(--fg);
+.time-histogram-interval .dropdown-trigger {
+  font-size: var(--text-xs); padding: 2px 5px; border-radius: 5px; box-shadow: none;
 }
 .time-histogram-bars {
   display: flex;
@@ -503,7 +507,7 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .field-types-table tr:last-child td { border-bottom: none; }
 .field-types-name { font-family: monospace; }
 .field-types-detected { color: var(--dim); font-family: monospace; }
-.field-types-table select { font-size: var(--text-sm); }
+.field-types-table .dropdown-trigger { font-size: var(--text-sm); }
 .cred-summary { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .cred-summary strong { font-size: var(--text-base); }
 .creds-warning { color: var(--dim); font-size: var(--text-xs); }

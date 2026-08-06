@@ -11,6 +11,7 @@ usage before moving on, not just the one that motivated the change.
 | File | What |
 |---|---|
 | `FieldTree.jsx` | Collapsible nested-folder tree — `items`+`getPath` (eager) or `nodes` (caller-managed, lazy-loading-friendly) |
+| `Dropdown.jsx` | Custom `<select>` replacement — button trigger + a portaled, keyboard-navigable listbox panel. The app has no native `<select>` anywhere; every "pick one of these" control (bucket interval, environment/index pickers, field-type overrides, JQL operator/group pickers, indent size, credential picker, auto-refresh interval) goes through this instead |
 | `ContextMenu.jsx` | Cursor-anchored right-click menu, portaled to `document.body` |
 | `Tooltip.jsx` | Custom hover tooltip (label + description) — not the native `title` attribute |
 | `ConfirmModal.jsx` | Generic "are you sure" dialog with caller-supplied action buttons |

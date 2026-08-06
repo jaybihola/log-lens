@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 import { FoldFilterRow } from './FoldFilterRow.jsx';
 import { IndexFieldTypesTable } from './IndexFieldTypesTable.jsx';
+import { Dropdown } from '../../../shared/components/Dropdown.jsx';
 
 function emptyIndex() {
   return { pattern: '', foldFilters: [], fieldTypeOverrides: {} };
@@ -138,10 +139,14 @@ export function EnvironmentsPane() {
             <input type="text" placeholder="Base URL (…/_msearch?pretty)" value={env.url} onChange={(e) => updateEnv(i, { url: e.target.value })} />
             <div className="settings-subsection">
               <label>Credential</label>
-              <select value={env.credentialId || ''} onChange={(e) => updateEnv(i, { credentialId: e.target.value || null })}>
-                <option value="">— none —</option>
-                {credentials.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.username})</option>)}
-              </select>
+              <Dropdown
+                value={env.credentialId || ''}
+                options={[
+                  { value: '', label: '— none —' },
+                  ...credentials.map((c) => ({ value: c.id, label: `${c.name} (${c.username})` })),
+                ]}
+                onChange={(v) => updateEnv(i, { credentialId: v || null })}
+              />
               {credentials.length === 0 && (
                 <p className="creds-hint">No credentials yet — add one on the Credentials tab.</p>
               )}

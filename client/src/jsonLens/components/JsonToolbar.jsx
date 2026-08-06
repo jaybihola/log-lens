@@ -4,11 +4,12 @@ import {
   ZoomIn, ZoomOut, ChevronsLeftRight, ChevronsRightLeft, Pencil, Eye, Code2, Table2,
 } from 'lucide-react';
 import { Tooltip } from '../../shared/components/Tooltip.jsx';
+import { Dropdown } from '../../shared/components/Dropdown.jsx';
 
 const INDENT_OPTIONS = [
-  [2, '2 spaces'],
-  [4, '4 spaces'],
-  ['tab', 'Tab'],
+  { value: '2', label: '2 spaces' },
+  { value: '4', label: '4 spaces' },
+  { value: 'tab', label: 'Tab' },
 ];
 
 // Log Lens's sibling is components/Toolbar.jsx — same shape (renders its own
@@ -156,9 +157,13 @@ export function JsonToolbar({
               <ChevronsLeftRight size={15} strokeWidth={1.75} />
             </button>
           </Tooltip>
-          <select value={indent} onChange={(e) => onIndentChange(e.target.value === 'tab' ? 'tab' : Number(e.target.value))}>
-            {INDENT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-          </select>
+          <Dropdown
+            align="right"
+            className="indent-dropdown"
+            value={String(indent)}
+            options={INDENT_OPTIONS}
+            onChange={(v) => onIndentChange(v === 'tab' ? 'tab' : Number(v))}
+          />
         </>
       )}
 

@@ -3,20 +3,27 @@ import { BarChart3, RotateCcw } from 'lucide-react';
 import { compileQuery } from '../filter/compile.js';
 import { computeTimeHistogram, NICE_INTERVALS_MS } from '../render/timeHistogram.js';
 import { formatTimeShort, formatGap } from '../render/timestamp.js';
+import { Dropdown } from '../../shared/components/Dropdown.jsx';
+import { Tooltip } from '../../shared/components/Tooltip.jsx';
 
 const LEVEL_ORDER = ['lvl-error', 'lvl-warn', 'lvl-info', 'lvl-debug'];
 
+const INTERVAL_OPTIONS = [
+  { value: 'auto', label: 'Auto interval' },
+  ...NICE_INTERVALS_MS.map((ms) => ({ value: String(ms), label: formatGap(ms) })),
+];
+
 function IntervalSelect({ value, onChange }) {
   return (
-    <select
-      className="time-histogram-interval"
-      value={value == null ? 'auto' : String(value)}
-      onChange={(e) => onChange(e.target.value === 'auto' ? null : Number(e.target.value))}
-      title="Bucket interval — Auto sizes to the visible time span, like Kibana's own default."
-    >
-      <option value="auto">Auto interval</option>
-      {NICE_INTERVALS_MS.map((ms) => <option key={ms} value={ms}>{formatGap(ms)}</option>)}
-    </select>
+    <Tooltip label="Bucket interval" description="Auto sizes to the visible time span, like Kibana's own default.">
+      <Dropdown
+        className="time-histogram-interval"
+        align="right"
+        value={value == null ? 'auto' : String(value)}
+        options={INTERVAL_OPTIONS}
+        onChange={(v) => onChange(v === 'auto' ? null : Number(v))}
+      />
+    </Tooltip>
   );
 }
 

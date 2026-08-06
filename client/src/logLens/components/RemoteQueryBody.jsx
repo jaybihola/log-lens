@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { FoldFilterChips } from './FoldFilterChips.jsx';
 import { JsonEditor } from '../../shared/components/JsonEditor.jsx';
+import { Dropdown } from '../../shared/components/Dropdown.jsx';
 
 function toDatetimeLocal(date) {
   const pad = (n) => String(n).padStart(2, '0');
@@ -134,21 +135,24 @@ export function RemoteQueryBody({ onCreate, onClose }) {
       {error && <div className="picker-error">{error}</div>}
       <div className="settings-subsection">
         <label>Environment</label>
-        <select value={environment} onChange={(e) => {
-          setEnvironment(e.target.value);
-          const env = environments.find((x) => x.name === e.target.value);
-          setIndex(env?.indices[0]?.pattern || '');
-        }}
-        >
-          {environments.map((e) => <option key={e.name} value={e.name}>{e.name}</option>)}
-        </select>
+        <Dropdown
+          value={environment}
+          options={environments.map((e) => ({ value: e.name, label: e.name }))}
+          onChange={(v) => {
+            setEnvironment(v);
+            const env = environments.find((x) => x.name === v);
+            setIndex(env?.indices[0]?.pattern || '');
+          }}
+        />
       </div>
       {currentEnv && currentEnv.indices.length > 1 && (
         <div className="settings-subsection">
           <label>Index</label>
-          <select value={index} onChange={(e) => setIndex(e.target.value)}>
-            {currentEnv.indices.map((i) => <option key={i.pattern} value={i.pattern}>{i.pattern}</option>)}
-          </select>
+          <Dropdown
+            value={index}
+            options={currentEnv.indices.map((i) => ({ value: i.pattern, label: i.pattern }))}
+            onChange={setIndex}
+          />
         </div>
       )}
       <div className="settings-subsection">

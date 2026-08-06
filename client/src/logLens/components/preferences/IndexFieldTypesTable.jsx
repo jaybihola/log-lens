@@ -1,8 +1,10 @@
 import { useIndexFields } from '../../hooks/useIndexFields.js';
+import { Dropdown } from '../../../shared/components/Dropdown.jsx';
 
 const TYPE_OPTIONS = [
-  'keyword', 'text', 'long', 'integer', 'short', 'byte', 'double', 'float',
-  'date', 'boolean', 'ip', 'object', 'nested', 'geo_point',
+  { value: '', label: '— use detected —' },
+  ...['keyword', 'text', 'long', 'integer', 'short', 'byte', 'double', 'float',
+    'date', 'boolean', 'ip', 'object', 'nested', 'geo_point'].map((t) => ({ value: t, label: t })),
 ];
 
 // Read-only list of an index's cached field names + ES-detected types, each
@@ -30,13 +32,11 @@ export function IndexFieldTypesTable({ environment, indexPattern, overrides, onC
               <td className="field-types-name">{f.name}</td>
               <td className="field-types-detected">{f.detectedType}</td>
               <td>
-                <select
+                <Dropdown
                   value={overrides[f.name] || ''}
-                  onChange={(e) => onChangeOverride(f.name, e.target.value || null)}
-                >
-                  <option value="">— use detected —</option>
-                  {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+                  options={TYPE_OPTIONS}
+                  onChange={(v) => onChangeOverride(f.name, v || null)}
+                />
               </td>
             </tr>
           ))}
