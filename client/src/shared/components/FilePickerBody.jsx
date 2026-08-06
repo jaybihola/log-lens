@@ -22,9 +22,16 @@ function joinPath(dir, name) {
 //    Save — JSON Lens's "Save As".
 // `browseFn` defaults to Log Lens's own /api/browse; JSON Lens passes its
 // own json-filtered browse endpoint instead.
+// `multiple` (opt-in, default false — untouched for every existing caller)
+// adds a checkbox to each file row in 'open-file' mode so several files can
+// be picked in one round trip; `onOpenMultiple(paths)` fires instead of
+// `onOpen` when one or more are checked, useful for e.g. opening a
+// docker-compose stack's several log files together. Single-file `onOpen`
+// (click a row, double-click, or type+Open) keeps working exactly as before
+// even with `multiple` on, so it's never a required prop.
 export function FilePickerBody({
-  onOpen, onClose, recentFiles = [], onRemoveRecent,
-  mode = 'open-file', browseFn = api.browse, initialFileName = '',
+  onOpen, onOpenMultiple, onClose, recentFiles = [], onRemoveRecent,
+  mode = 'open-file', browseFn = api.browse, initialFileName = '', multiple = false,
 }) {
   const [dir, setDir] = useState(null);
   const [parent, setParent] = useState(null);
@@ -33,6 +40,7 @@ export function FilePickerBody({
   const [fileName, setFileName] = useState(initialFileName);
   const [showHidden, setShowHidden] = useState(false);
   const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(() => new Set());
 
   const browseTo = async (target) => {
     try {
@@ -57,6 +65,20 @@ export function FilePickerBody({
   };
   const saveAs = () => {
     if (dir && fileName.trim()) onOpen(joinPath(dir, fileName.trim()));
+  };
+  const toggleSelected = (path) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  };
+  const openSelected = () => {
+    if (!selected.size) return;
+    const paths = [...selected];
+    if (onOpenMultiple) onOpenMultiple(paths);
+    else paths.forEach((p) => onOpen(p));
   };
 
   return (
@@ -88,6 +110,7 @@ export function FilePickerBody({
         )}
         {entries.map((entry) => {
           const full = dir === '/' ? `/${entry.name}` : `${dir}/${entry.name}`;
+          const showCheckbox = multiple && mode === 'open-file' && !entry.isDir;
           const selectEntry = () => {
             if (entry.isDir) { browseTo(full); return; }
             if (mode === 'save-file') setFileName(entry.name);
@@ -100,6 +123,15 @@ export function FilePickerBody({
               onClick={selectEntry}
               onDoubleClick={() => { if (!entry.isDir && mode === 'open-file') onOpen(full); }}
             >
+              {showCheckbox && (
+                <input
+                  type="checkbox"
+                  className="picker-entry-checkbox"
+                  checked={selected.has(full)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => toggleSelected(full)}
+                />
+              )}
               {entry.isDir ? '📁' : '📄'} {entry.name}
             </div>
           );
@@ -113,6 +145,13 @@ export function FilePickerBody({
         Show hidden files
       </button>
 
+      {mode === 'open-file' && multiple && selected.size > 0 && (
+        <div className="picker-path-row">
+          <span className="picker-selected-count">{selected.size} file{selected.size === 1 ? '' : 's'} selected</span>
+          <button type="button" onClick={openSelected}>Open {selected.size} selected</button>
+          <button type="button" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
       {mode === 'open-file' && (
         <div className="picker-path-row">
           <input
