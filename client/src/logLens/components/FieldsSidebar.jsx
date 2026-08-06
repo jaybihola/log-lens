@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Plus, FolderTree, List, UnfoldVertical, FoldVertical } from 'lucide-react';
 import { FieldStatsPopover } from './FieldStatsPopover.jsx';
 import { SidebarResizeHandle } from '../../shared/components/SidebarResizeHandle.jsx';
@@ -76,6 +76,19 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
     clearTimeout(hideTimer.current);
     setHover(null);
   };
+
+  // The popover's position is captured once, from the hovered row's rect at
+  // hover-time — it doesn't track the row as it scrolls. Left open, a scroll
+  // of the list leaves it floating over the wrong row entirely. Closing
+  // outright (rather than repositioning) matches how ContextMenu/Dropdown
+  // treat a scroll while open elsewhere in this app.
+  useEffect(() => {
+    if (!hover) return undefined;
+    const onScroll = () => hideNow();
+    document.addEventListener('scroll', onScroll, true);
+    return () => document.removeEventListener('scroll', onScroll, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hover]);
 
   const handleContextMenu = (e, path, active) => {
     hideNow(); // right-clicking mid-hover shouldn't leave the delayed stats popover to pop up on top of (or right next to) the menu
