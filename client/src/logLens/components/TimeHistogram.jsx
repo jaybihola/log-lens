@@ -1,10 +1,24 @@
 import { useMemo, useRef } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { compileQuery } from '../filter/compile.js';
-import { computeTimeHistogram } from '../render/timeHistogram.js';
-import { formatTimeShort } from '../render/timestamp.js';
+import { computeTimeHistogram, NICE_INTERVALS_MS } from '../render/timeHistogram.js';
+import { formatTimeShort, formatGap } from '../render/timestamp.js';
 
 const LEVEL_ORDER = ['lvl-error', 'lvl-warn', 'lvl-info', 'lvl-debug'];
+
+function IntervalSelect({ value, onChange }) {
+  return (
+    <select
+      className="time-histogram-interval"
+      value={value == null ? 'auto' : String(value)}
+      onChange={(e) => onChange(e.target.value === 'auto' ? null : Number(e.target.value))}
+      title="Bucket interval — Auto sizes to the visible time span, like Kibana's own default."
+    >
+      <option value="auto">Auto interval</option>
+      {NICE_INTERVALS_MS.map((ms) => <option key={ms} value={ms}>{formatGap(ms)}</option>)}
+    </select>
+  );
+}
 
 // Log-volume-over-time strip, stacked by log level — bucket the currently
 // filtered/on-screen entries (not the raw unfiltered buffer, and never more
@@ -14,7 +28,7 @@ const LEVEL_ORDER = ['lvl-error', 'lvl-warn', 'lvl-info', 'lvl-debug'];
 // behavior (a paused tab keeps showing the snapshot it paused on, not lines
 // that kept arriving underneath it) so the strip never disagrees with what's
 // actually on screen.
-export function TimeHistogram({ buffer, ui }) {
+export function TimeHistogram({ buffer, ui, intervalMs, onIntervalChange }) {
   const { filterQuery, caseSensitive, paused } = ui;
   const pausedSnapshotRef = useRef(null);
   if (!paused) pausedSnapshotRef.current = null;
@@ -26,7 +40,7 @@ export function TimeHistogram({ buffer, ui }) {
     queryActive ? effectiveBuffer.filter((entry) => compiled.matcher(entry.text)) : effectiveBuffer
   ), [effectiveBuffer, compiled, queryActive]);
 
-  const data = useMemo(() => computeTimeHistogram(filtered), [filtered]);
+  const data = useMemo(() => computeTimeHistogram(filtered, { intervalMs }), [filtered, intervalMs]);
 
   if (data.timestamped === 0) {
     return (
@@ -37,13 +51,19 @@ export function TimeHistogram({ buffer, ui }) {
             ? 'No lines to chart.'
             : `No timestamped lines to chart (${filtered.length} shown, none with a resolvable timestamp).`}
         </span>
+        <span className="time-histogram-head-spacer" />
+        <IntervalSelect value={intervalMs} onChange={onIntervalChange} />
       </div>
     );
   }
 
   return (
-    <div className="time-histogram" title="Buckets log volume by timestamp for the currently filtered, buffered lines only.">
-      <div className="time-histogram-bars">
+    <div className="time-histogram">
+      <div className="time-histogram-head">
+        <span className="time-histogram-head-spacer" />
+        <IntervalSelect value={intervalMs} onChange={onIntervalChange} />
+      </div>
+      <div className="time-histogram-bars" title="Buckets log volume by timestamp for the currently filtered, buffered lines only.">
         {data.buckets.map((b, i) => {
           const heightPct = data.maxCount ? Math.max((b.count / data.maxCount) * 100, b.count > 0 ? 6 : 0) : 0;
           const range = `${formatTimeShort(new Date(b.start).toISOString())} – ${formatTimeShort(new Date(b.end).toISOString())}`;
