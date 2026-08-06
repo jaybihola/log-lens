@@ -303,6 +303,7 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
   color: var(--dim); user-select: none; white-space: nowrap; padding-top: 1px;
 }
 .line .ts {
+  display: flex; flex-direction: column; align-items: flex-start;
   flex: 0 0 auto; width: 84px; color: var(--dim); font-size: 11.5px;
   margin-right: 10px; white-space: nowrap; padding-top: 2px;
 }
@@ -319,12 +320,13 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .badge.lvl-info { background: rgba(var(--info-rgb), 0.14); color: var(--info); }
 .badge.lvl-debug { background: rgba(var(--debug-rgb), 0.14); color: var(--debug); }
 
-/* ---- per-line outlier time-gap flag — only rendered for gaps EntryView's
-   outlierGapThreshold flags, not on every line; see EntryView.jsx ---- */
+/* ---- per-line outlier time-gap flag — stacked under the ts column's short
+   time so it never shifts the badge/columns/text that follow; only rendered
+   for gaps EntryView's outlierGapThreshold flags, not on every line ---- */
 .gap-flag {
-  flex: 0 0 auto; font-size: 10px; font-family: monospace; color: var(--warn);
-  background: rgba(var(--warn-rgb), 0.12); border-radius: 3px; padding: 1px 5px;
-  margin-right: 8px; margin-top: 1px; white-space: nowrap;
+  display: block; font-size: 9.5px; font-family: monospace; color: var(--warn);
+  background: rgba(var(--warn-rgb), 0.12); border-radius: 3px; padding: 0px 4px;
+  margin-top: 2px; white-space: nowrap;
 }
 
 .line.lvl-warn .text { color: var(--warn); }
