@@ -1,7 +1,23 @@
 import { useMemo } from 'react';
-import { ChevronRight, Folder, Loader2 } from 'lucide-react';
+import { ChevronRight, Folder, FolderOpen, Loader2 } from 'lucide-react';
 import { Tooltip } from './Tooltip.jsx';
-import { buildFieldTree, buildFlatList, filterFieldTree, collectFolderPaths } from '../render/fieldTree.js';
+import { buildFieldTree, buildFlatList, filterFieldTree, collectFolderPaths, treeIndent } from '../render/fieldTree.js';
+
+// Ancestor guide lines: one thin vertical line per ancestor level, so a
+// deeply-nested row visually traces back to its parent chain instead of
+// indentation alone (hard to track past 2-3 levels). Pure arithmetic off
+// `depth`/`treeIndent`, not dependent on DOM nesting — the tree renders as a
+// flat list of rows (see FieldTreeLevel), not nested containers per level.
+export function TreeGuides({ depth }) {
+  if (depth === 0) return null;
+  return (
+    <>
+      {Array.from({ length: depth }, (_, i) => (
+        <span key={i} className="field-tree-guide" style={{ left: treeIndent(i) + 6 }} />
+      ))}
+    </>
+  );
+}
 
 // A generic, reusable nested-field tree — dot-path items ("user.address.
 // city") rendered as a collapsible file-explorer-style tree instead of a
@@ -108,16 +124,19 @@ function FieldTreeRow({ node, depth, expanded, onToggleExpand, renderLeaf, rende
           className={isFolderMenuActive?.(node) ? 'field-tree-folder-row menu-target' : 'field-tree-folder-row'}
           onContextMenu={onFolderContextMenu ? (e) => onFolderContextMenu(e, node) : undefined}
         >
+          <TreeGuides depth={depth} />
           <button
             type="button"
             className="field-tree-folder"
-            style={{ paddingLeft: 8 + depth * 14 }}
+            style={{ paddingLeft: treeIndent(depth) }}
             onClick={() => onToggleExpand(node.path)}
           >
             <ChevronRight size={13} strokeWidth={2} className={isExpanded ? 'field-tree-chevron expanded' : 'field-tree-chevron'} />
             {node.loading
               ? <Loader2 size={13} strokeWidth={2} className="field-tree-folder-icon spin" />
-              : <Folder size={13} strokeWidth={1.75} className="field-tree-folder-icon" />}
+              : (isExpanded
+                ? <FolderOpen size={13} strokeWidth={1.75} className="field-tree-folder-icon" />
+                : <Folder size={13} strokeWidth={1.75} className="field-tree-folder-icon" />)}
             <span className="field-tree-label">{node.segment}</span>
           </button>
           {renderFolderAction && renderFolderAction(node, depth)}
