@@ -302,6 +302,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               <TimeHistogram
                 buffer={activeBuffer}
                 ui={activeUi}
+                onChangeUi={updateActiveTabUi}
                 intervalMs={histogramIntervalMs}
                 onIntervalChange={setHistogramInterval}
               />
@@ -314,6 +315,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               fontSize={fontSize}
               toggleExpanded={toggleExpanded}
               togglePinned={togglePinned}
+              onChangeUi={updateActiveTabUi}
               extraColumns={activeUi.columns}
               onToggleColumn={toggleColumn}
               onRemoveColumn={removeColumn}
