@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AlignLeft, Minimize2, ArrowDownAZ, WrapText, Copy, Check, Download, Upload, Trash2, Plus,
-  Save, SaveAll, PanelLeft, Undo2, Redo2, Search, FoldVertical, UnfoldVertical, Hash,
-  ZoomIn, ZoomOut, ChevronsLeftRight, ChevronsRightLeft, Braces, FileJson, FolderPlus, FileClock,
-  Pencil, Eye, Code2, Table2,
-} from 'lucide-react';
+import { Plus, PanelLeft, Braces, FileJson, FolderPlus, FileClock } from 'lucide-react';
 import { useJsonTabs, isTabDirty } from './hooks/useJsonTabs.js';
 import { useJsonFileSystem } from './hooks/useJsonFileSystem.js';
 import { useJsonSidebar } from './hooks/useJsonSidebar.js';
@@ -12,6 +7,7 @@ import { useContextMenu } from '../shared/hooks/useContextMenu.js';
 import { jsonLensApi } from './api/jsonLensClient.js';
 import { JsonTabBar } from './components/JsonTabBar.jsx';
 import { JsonFileSidebar } from './components/JsonFileSidebar.jsx';
+import { JsonToolbar } from './components/JsonToolbar.jsx';
 import { JsonTableView } from './components/JsonTableView.jsx';
 import { JsonFindBar } from './components/JsonFindBar.jsx';
 import { JsonEditor } from '../shared/components/JsonEditor.jsx';
@@ -25,12 +21,6 @@ import {
   filterJsonByFields, findMatchingFieldNames, formatJsonText, minifyJsonText, validateJson,
   escapeJsonString, unescapeJsonString, parseJsonForTable, findTextOccurrences, findJsonMatches,
 } from './jsonUtils.js';
-
-const INDENT_OPTIONS = [
-  [2, '2 spaces'],
-  [4, '4 spaces'],
-  ['tab', 'Tab'],
-];
 
 const FONT_SIZE_KEY = 'log-lens-json-editor-font-size';
 const MIN_FONT_SIZE = 10;
@@ -517,181 +507,47 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
             />
           ) : (
             <>
-          <div className="json-toolbar">
-            <div className="json-mode-toggle">
-              <Tooltip label="Edit" description="Edit the raw JSON — the field filter is hidden here so nothing gets in the way.">
-                <button type="button" className={mode === 'edit' ? 'active icon-btn' : 'icon-btn'} onClick={() => setMode('edit')} disabled={!activeTab}>
-                  <Pencil size={15} strokeWidth={1.75} />
-                  <span className="json-mode-toggle-label">Edit</span>
-                </button>
-              </Tooltip>
-              <Tooltip label="View" description="Read-only viewing, with field-filtering available.">
-                <button type="button" className={isViewMode ? 'active icon-btn' : 'icon-btn'} onClick={() => setMode('view')} disabled={!activeTab}>
-                  <Eye size={15} strokeWidth={1.75} />
-                  <span className="json-mode-toggle-label">View</span>
-                </button>
-              </Tooltip>
-            </div>
-
-            {isViewMode && (
-              <div className="json-mode-toggle">
-                <Tooltip label="Code view" description="Read-only syntax-highlighted text.">
-                  <button type="button" className={viewSubMode === 'code' ? 'active icon-btn' : 'icon-btn'} onClick={() => setViewSubMode('code')}>
-                    <Code2 size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Table view" description="Nested objects/arrays as an expandable table.">
-                  <button type="button" className={viewSubMode === 'table' ? 'active icon-btn' : 'icon-btn'} onClick={() => setViewSubMode('table')}>
-                    <Table2 size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-              </div>
-            )}
-
-            <span className="json-toolbar-divider" />
-
-            {mode === 'edit' && (
-              <>
-                <Tooltip label="Save" description={activeTab?.origin === 'new' ? 'Choose where to save this tab.' : 'Write this tab back to where it came from.'}>
-                  <button type="button" className="icon-btn" onClick={() => activeTab && saveTab(activeTab)} disabled={!activeTab || !dirty}>
-                    <Save size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Save as…" description="Save this tab's content to a new file on disk.">
-                  <button type="button" className="icon-btn" onClick={() => activeTab && setDialog({ type: 'save-as', tab: activeTab })} disabled={!activeTab || !content.trim()}>
-                    <SaveAll size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Import file…" description="Load a .json file into this tab.">
-                  <button type="button" className="icon-btn" onClick={() => fileInputRef.current?.click()}>
-                    <Upload size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <input ref={fileInputRef} type="file" accept=".json,application/json,text/plain" style={{ display: 'none' }} onChange={handleFilePicked} />
-              </>
-            )}
-            <Tooltip label="Download" description="Save what's currently shown as a .json file.">
-              <button type="button" className="icon-btn" onClick={download} disabled={!displayedText.trim()}>
-                <Download size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-
-            <span className="json-toolbar-divider" />
-
-            {mode === 'edit' && (
-              <>
-                <Tooltip label="Undo" description="Undo the last edit.">
-                  <button type="button" className="icon-btn" onClick={() => editorRef.current?.undo()} disabled={!activeTab}>
-                    <Undo2 size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Redo" description="Redo the last undone edit.">
-                  <button type="button" className="icon-btn" onClick={() => editorRef.current?.redo()} disabled={!activeTab}>
-                    <Redo2 size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-              </>
-            )}
-            <Tooltip
-              label={isViewMode ? 'Find in view' : 'Find / Replace'}
-              description={isViewMode ? "Highlight and step through matches — doesn't change what's shown (Cmd/Ctrl+F)." : "Open the editor's search panel."}
-            >
-              <button
-                type="button"
-                className={isViewMode && findOpen ? 'active icon-btn' : 'icon-btn'}
-                onClick={() => (isViewMode ? setFindOpen((v) => !v) : editorRef.current?.find())}
-                disabled={!activeTab}
-              >
-                <Search size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Go to line…" description="Jump the cursor to a specific line number.">
-              <button type="button" className="icon-btn" onClick={requestGotoLine} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
-                <Hash size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-
-            {mode === 'edit' && (
-              <>
-                <span className="json-toolbar-divider" />
-
-                <Tooltip label="Format" description="Pretty-print with the selected indent.">
-                  <button type="button" className="icon-btn" onClick={format} disabled={!content.trim() || !validation.valid}>
-                    <AlignLeft size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Minify" description="Collapse to a single line.">
-                  <button type="button" className="icon-btn" onClick={minify} disabled={!content.trim() || !validation.valid}>
-                    <Minimize2 size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Sort keys" description="Alphabetize object keys when formatting or minifying.">
-                  <button type="button" className={sortKeys ? 'active icon-btn' : 'icon-btn'} onClick={() => setSortKeys((v) => !v)}>
-                    <ArrowDownAZ size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Escape" description="Wrap the current content as a JSON string literal, for embedding it as a value elsewhere.">
-                  <button type="button" className="icon-btn" onClick={escapeString} disabled={!content.trim()}>
-                    <ChevronsRightLeft size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <Tooltip label="Unescape" description="Decode a JSON string literal (e.g. pasted from a log field) back into real JSON.">
-                  <button type="button" className="icon-btn" onClick={unescapeString} disabled={!content.trim()}>
-                    <ChevronsLeftRight size={15} strokeWidth={1.75} />
-                  </button>
-                </Tooltip>
-                <select value={indent} onChange={(e) => setIndent(e.target.value === 'tab' ? 'tab' : Number(e.target.value))}>
-                  {INDENT_OPTIONS.map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-                </select>
-              </>
-            )}
-
-            <span className="json-toolbar-divider" />
-
-            <Tooltip label="Wrap lines" description="Wrap long lines instead of scrolling horizontally.">
-              <button type="button" className={wrap ? 'active icon-btn' : 'icon-btn'} onClick={() => setWrap((v) => !v)} disabled={isViewMode && viewSubMode === 'table'}>
-                <WrapText size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Fold all" description="Collapse every object and array.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.foldAll()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
-                <FoldVertical size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Unfold all" description="Expand every collapsed object and array.">
-              <button type="button" className="icon-btn" onClick={() => editorRef.current?.unfoldAll()} disabled={!activeTab || (isViewMode && viewSubMode === 'table')}>
-                <UnfoldVertical size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Zoom out" description="Shrink the editor's font size.">
-              <button type="button" className="icon-btn" onClick={() => stepFontSize(-1)} disabled={fontSize <= MIN_FONT_SIZE || (isViewMode && viewSubMode === 'table')}>
-                <ZoomOut size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-            <Tooltip label="Zoom in" description="Enlarge the editor's font size.">
-              <button type="button" className="icon-btn" onClick={() => stepFontSize(1)} disabled={fontSize >= MAX_FONT_SIZE || (isViewMode && viewSubMode === 'table')}>
-                <ZoomIn size={15} strokeWidth={1.75} />
-              </button>
-            </Tooltip>
-
-            <span className="json-toolbar-divider" />
-
-            <Tooltip label={copyStatus || 'Copy'} description="Copy what's currently shown to the clipboard.">
-              <button type="button" className="icon-btn" onClick={copy} disabled={!displayedText.trim()}>
-                {copyStatus === 'Copied' ? <Check size={15} strokeWidth={1.75} /> : <Copy size={15} strokeWidth={1.75} />}
-              </button>
-            </Tooltip>
-            {mode === 'edit' && (
-              <Tooltip label="Clear" description="Empty this tab.">
-                <button type="button" className="icon-btn" onClick={clear} disabled={!content.trim()}>
-                  <Trash2 size={15} strokeWidth={1.75} />
-                </button>
-              </Tooltip>
-            )}
-            <span className={content.trim() ? `json-validation ${validation.valid ? 'ok' : 'error'}` : 'json-validation'}>
-              {content.trim() ? (validation.valid ? 'Valid JSON' : validation.error) : ''}
-            </span>
-          </div>
+          <JsonToolbar
+            activeTab={activeTab}
+            mode={mode}
+            onSetMode={setMode}
+            isViewMode={isViewMode}
+            viewSubMode={viewSubMode}
+            onSetViewSubMode={setViewSubMode}
+            dirty={dirty}
+            content={content}
+            displayedText={displayedText}
+            validation={validation}
+            onSave={() => activeTab && saveTab(activeTab)}
+            onSaveAs={() => activeTab && setDialog({ type: 'save-as', tab: activeTab })}
+            fileInputRef={fileInputRef}
+            onImportFile={handleFilePicked}
+            onDownload={download}
+            onUndo={() => editorRef.current?.undo()}
+            onRedo={() => editorRef.current?.redo()}
+            findOpen={findOpen}
+            onToggleFind={() => (isViewMode ? setFindOpen((v) => !v) : editorRef.current?.find())}
+            onGotoLine={requestGotoLine}
+            onFormat={format}
+            onMinify={minify}
+            sortKeys={sortKeys}
+            onToggleSortKeys={() => setSortKeys((v) => !v)}
+            onEscape={escapeString}
+            onUnescape={unescapeString}
+            indent={indent}
+            onIndentChange={setIndent}
+            wrap={wrap}
+            onToggleWrap={() => setWrap((v) => !v)}
+            onFoldAll={() => editorRef.current?.foldAll()}
+            onUnfoldAll={() => editorRef.current?.unfoldAll()}
+            fontSize={fontSize}
+            minFontSize={MIN_FONT_SIZE}
+            maxFontSize={MAX_FONT_SIZE}
+            onStepFontSize={stepFontSize}
+            copyStatus={copyStatus}
+            onCopy={copy}
+            onClear={clear}
+          />
 
           {isViewMode && (
             <div className="json-field-filter">

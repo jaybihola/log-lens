@@ -404,15 +404,24 @@ the Kibana-style field-tree panel described above.
 
 ### JSON Lens's own structure (`jsonLens/`)
 
-`JsonFormatterApp.jsx` is the tool's entire top-level component — tabs,
-toolbar, field-filter row, and the editor, plus the whole
-close-tab/save/save-as decision-modal state machine (mirrors the shape of
-"unsaved changes, what do you want to do" from any real editor). Everything
-else it needs is either `shared/` or its own
-`useJsonTabs`/`useJsonFileSystem`/`useJsonSidebar` hooks.
-`components/JsonFileSidebar.jsx` is the folder-tree + scratches sidebar;
-`components/JsonTabBar.jsx` is its tab strip (dirty dot, rename, the same
-context-menu-stays-active pattern as Log Lens's `TabBar`).
+`JsonFormatterApp.jsx` is the tool's top-level component — tabs, the
+field-filter row, and the editor, plus the whole close-tab/save/save-as
+decision-modal state machine (mirrors the shape of "unsaved changes, what do
+you want to do" from any real editor). Everything else it needs is either
+`shared/` or its own `useJsonTabs`/`useJsonFileSystem`/`useJsonSidebar`
+hooks. `components/JsonFileSidebar.jsx` is the folder-tree + scratches
+sidebar; `components/JsonTabBar.jsx` is its tab strip (dirty dot, rename,
+the same context-menu-stays-active pattern *and* the same overflow-scroll
+behavior — `canScrollLeft`/`canScrollRight`, a `ResizeObserver`, the
+`.tab-scroll-btn` buttons — as Log Lens's `TabBar`); `components/
+JsonToolbar.jsx` is the mode toggle/save/undo-redo/find/format/wrap/fold/
+zoom/copy row, following the same "renders its own wrapper div, takes
+values + callbacks as flat props" shape as Log Lens's `components/
+Toolbar.jsx`. The Edit/View mode toggle is the one icon control in the app
+that keeps a visible text label next to its icon instead of relying on
+`Tooltip` alone — a deliberate, documented exception (see the comment above
+`.json-mode-toggle` in `JsonLens.css`), not a drift from the tooltip-only
+convention everything else follows.
 
 ## Verification workflow used while building this
 

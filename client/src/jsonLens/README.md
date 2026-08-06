@@ -10,7 +10,7 @@ save/scratch/discard flow, the filesystem hook) — this file is just a map.
 
 | File | What |
 |---|---|
-| `JsonFormatterApp.jsx` | The tool's entire top-level component — tabs, toolbar, Edit/View mode toggle, field-filter, editor, and the save/close-tab decision-modal state machine |
+| `JsonFormatterApp.jsx` | The tool's top-level component — tabs, field-filter, editor, and the save/close-tab decision-modal state machine; the toolbar itself is `components/JsonToolbar.jsx` |
 | `jsonUtils.js` | Pure logic: JSON validation/error-location, format/minify/sort-keys, fuzzy field search, field-filter pruning, escape/unescape, table-view helpers (value typing/preview/parsing), find-in-view matchers (`findTextOccurrences` for Code sub-mode, `findJsonMatches` for Table sub-mode) |
 | `JsonLens.css` | This tool's own styling |
 
@@ -19,7 +19,8 @@ save/scratch/discard flow, the filesystem hook) — this file is just a map.
 | File | What |
 |---|---|
 | `JsonFileSidebar.jsx` | Folder tree + scratches list, built on `shared/components/FieldTree.jsx` |
-| `JsonTabBar.jsx` | JSON Lens's tab strip — dirty dot, rename, same context-menu-stays-active pattern as Log Lens's `TabBar` |
+| `JsonToolbar.jsx` | The toolbar row — mode toggle, save/undo/redo/find, format/minify/sort-keys, wrap/fold/zoom, copy/clear. Same shape/prop-contract convention as Log Lens's `Toolbar.jsx`: renders its own wrapper div, takes values + callbacks as flat props, no state of its own |
+| `JsonTabBar.jsx` | JSON Lens's tab strip — dirty dot, rename, same context-menu-stays-active pattern *and* the same overflow-scroll behavior (scroll buttons, `ResizeObserver`) as Log Lens's `TabBar` |
 | `JsonTableView.jsx` | View mode's Table sub-mode — key/type/value rows, nested objects/arrays expand in place (each row owns its own expand state, no path-keyed Set to maintain). When the find bar is open, also highlights matching key/value cells, auto-expands ancestor rows so a stepped-to match is never hidden inside a collapsed row, and scrolls the current match into view |
 | `JsonFindBar.jsx` | View mode's non-destructive find-in-view bar (query, `n/total`, next/prev, case-sensitivity toggle) — mirrors Log Lens's own `FindBar.jsx` shape/behavior, adapted to a plain substring search over one document instead of a JQL query over a scrolling log stream. Distinct from the field-filter search box below it: find only highlights/steps through matches, the field filter actually prunes what's shown |
 
