@@ -1,22 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
-import { PanelLeft, Settings, Moon, Sun, HelpCircle, ScrollText, FileText, Radio, Clock } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { PanelLeft, Settings, Moon, Sun, HelpCircle, ScrollText, FileText, Radio, Clock, Layers } from 'lucide-react';
 import { useTabs } from './hooks/useTabs.js';
 import { useDisplaySettings } from './hooks/useDisplaySettings.js';
 import { usePresets } from './hooks/usePresets.js';
 import { useRecentFiles } from './hooks/useRecentFiles.js';
+import { useTabGroups } from './hooks/useTabGroups.js';
 import { useColumnWidths } from './hooks/useColumnWidths.js';
 import { useTheme } from '../shell/useTheme.js';
 import { useIndexFields } from './hooks/useIndexFields.js';
 import { useFieldsSidebar } from './hooks/useFieldsSidebar.js';
 import { useFilterMode } from './hooks/useFilterMode.js';
+import { useTitleAttention } from './hooks/useTitleAttention.js';
 import { resolveJumpTarget } from './render/timestamp.js';
 import { TabBar } from './components/TabBar.jsx';
 import { TabPickerModal } from './components/TabPickerModal.jsx';
 import { PreferencesModal } from './components/preferences/PreferencesModal.jsx';
 import { HelpPanel } from './components/HelpPanel.jsx';
+import { TabGroupsMenu } from './components/TabGroupsMenu.jsx';
 import { Popover } from '../shared/components/Popover.jsx';
 import { Tooltip } from '../shared/components/Tooltip.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
+import { TimeHistogram } from './components/TimeHistogram.jsx';
 import { EntryView } from './components/EntryView.jsx';
 import { FieldsSidebar } from './components/FieldsSidebar.jsx';
 import { EmptyState } from '../shared/components/EmptyState.jsx';
@@ -28,17 +32,23 @@ function basename(p) {
 
 export function LogViewerApp({ active, onSendToJsonLens }) {
   const {
-    tabMetaList, activeTabId, activeBuffer, activeUi,
+    tabMetaList, activeTabId, activeBuffer, activeUi, attentionCounts, getLastLineAt,
     openNewTab, openInTab, activateTab, closeTab, closeOtherTabs, closeTabsToRight, fetchTab, clearActiveTab, updateActiveTabUi,
     toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, fetchActiveTab,
   } = useTabs();
-  const { fontSize, stepFontSize } = useDisplaySettings();
+  const { fontSize, stepFontSize, histogramOpen, toggleHistogram, histogramIntervalMs, setHistogramInterval } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
   const { recentFiles, addRecent, removeRecent } = useRecentFiles();
+  const { groups, saveGroup, renameGroup, removeGroup } = useTabGroups();
   const { tsWidth, badgeWidth, extraColumnWidth, setColumnWidth } = useColumnWidths();
   const { theme, setTheme, toggleTheme } = useTheme();
   const { sidebarOpen, toggleSidebar, sidebarWidth, resizeSidebar } = useFieldsSidebar();
   const { filterMode, toggleFilterMode } = useFilterMode();
+
+  // Background-tab attention: flash the browser tab title while any Log
+  // Lens tab has unseen error/warn lines (see useTabs.js/TabBar.jsx for the
+  // per-tab badge half of this).
+  useTitleAttention(useMemo(() => Object.values(attentionCounts).reduce((sum, n) => sum + n, 0), [attentionCounts]));
 
   const [modal, setModal] = useState(null); // null | 'picker' | 'preferences'
   const [pickerMode, setPickerMode] = useState('file');
@@ -49,6 +59,9 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
 
   const activeTab = tabMetaList.find((t) => t.id === activeTabId) || null;
   const indexFields = useIndexFields(activeTab?.environment, activeTab?.queryConfig?.index);
+  const exportLabel = activeTab
+    ? (activeTab.kind === 'api' ? (activeTab.environment || 'remote-query') : basename(activeTab.file || 'log'))
+    : 'log-lens';
   const closeModal = () => setModal(null);
   const openPicker = (mode) => { setPickerMode(mode); setModal('picker'); };
 
@@ -57,6 +70,21 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     addRecent(path);
     closeModal();
   };
+
+  // Multi-select file open (picker's "Open N selected") and tab-group reopen
+  // both just loop createTab-per-path — sequential, so a stack of 5 files
+  // opens as 5 ordered tabs rather than racing.
+  const handleFilesOpen = async (paths) => {
+    for (const path of paths) {
+      await openNewTab(path); // eslint-disable-line no-await-in-loop
+      addRecent(path);
+    }
+    closeModal();
+  };
+
+  // File-tab paths currently open — what "save current tabs as a group"
+  // captures. Remote-query tabs have no path, so they're left out of groups.
+  const openFilePaths = tabMetaList.filter((t) => t.kind === 'file' && t.file).map((t) => t.file);
 
   // Tab bar context menu's "Reload"/"Fetch new" — a file tab re-tails the
   // same path from scratch, an api tab just re-runs its last query.
@@ -164,8 +192,31 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
           onReload={handleReloadTab}
           onCloseOthers={closeOtherTabs}
           onCloseToRight={closeTabsToRight}
+          attentionCounts={attentionCounts}
+          getLastLineAt={getLastLineAt}
         />
         <div className="app-header-actions">
+          <Popover
+            align="right"
+            trigger={(toggle, open) => (
+              <Tooltip label="Tab groups" description="Save the currently open files as a named group, or reopen a saved one." disabled={open}>
+                <button type="button" className={open ? 'active icon-btn' : 'icon-btn'} onClick={toggle}>
+                  <Layers size={16} strokeWidth={1.75} />
+                </button>
+              </Tooltip>
+            )}
+          >
+            {(close) => (
+              <TabGroupsMenu
+                groups={groups}
+                openFilePaths={openFilePaths}
+                onOpenGroup={(paths) => { handleFilesOpen(paths); close(); }}
+                onSaveGroup={saveGroup}
+                onRemoveGroup={removeGroup}
+                onRenameGroup={renameGroup}
+              />
+            )}
+          </Popover>
           <Tooltip label="Fields sidebar" description="Browse this index's cached fields, add columns, and see value distributions.">
             <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
               <PanelLeft size={16} strokeWidth={1.75} />
@@ -240,9 +291,21 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               filterMode={filterMode}
               onToggleFilterMode={toggleFilterMode}
               onOpenFind={() => setFindOpen(true)}
+              histogramOpen={histogramOpen}
+              onToggleHistogram={toggleHistogram}
+              tabLabel={exportLabel}
             />
             {activeTab.kind === 'api' && activeTab.fetchError && (
               <div className="api-error">{activeTab.fetchError}</div>
+            )}
+            {histogramOpen && (
+              <TimeHistogram
+                buffer={activeBuffer}
+                ui={activeUi}
+                onChangeUi={updateActiveTabUi}
+                intervalMs={histogramIntervalMs}
+                onIntervalChange={setHistogramInterval}
+              />
             )}
             <EntryView
               ref={entryViewRef}
@@ -252,6 +315,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               fontSize={fontSize}
               toggleExpanded={toggleExpanded}
               togglePinned={togglePinned}
+              onChangeUi={updateActiveTabUi}
               extraColumns={activeUi.columns}
               onToggleColumn={toggleColumn}
               onRemoveColumn={removeColumn}
@@ -288,6 +352,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
       {modal === 'picker' && (
         <TabPickerModal
           onOpenFile={handleFileOpen}
+          onOpenFiles={handleFilesOpen}
           onCreateRemote={createRemoteTab}
           onClose={closeModal}
           recentFiles={recentFiles}

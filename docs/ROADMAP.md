@@ -49,6 +49,50 @@ no such prior spec; they're native to this codebase.
   presets/pinned lines/column headers.
 - **Send to JSON Lens** — a line's context menu can hand its (pretty-printed, if parseable)
   content straight to a new JSON Lens tab.
+- **Time histogram** — a collapsible bar strip (Toolbar's view-options menu toggles it, visible by
+  default for a first-time user while still respecting anyone who'd already toggled it off)
+  showing log volume over time, bucketed from `ownTimestamp` on whatever's currently
+  filtered/on-screen (not the raw buffer), so a burst of activity is visible at a glance. Live-
+  updating with streamed lines and filter changes, freezes in step with the tab's own Pause, and
+  makes its buffered-lines-only scope explicit rather than implying full-file coverage. Now
+  Kibana-Discover-flavored:
+  - Each bucket is **stacked by log level** (error/warn/info/debug, `highlight.js`'s `levelClass`,
+    the same `--error`/`--warn`/`--info`/`--debug` tokens used everywhere else), not just a plain
+    volume bar.
+  - **Adjustable bucket interval** — Auto (span-based, snapped to a "nice" interval the same way
+    Kibana's own default does) or a manual override from a small dropdown (1s through 1d).
+  - **Drag-to-select a time range** (or click a single bar) narrows the tab's view to that window.
+    Implemented as a second, independent filtering axis in `filter/compile.js` — a `timeRange`
+    ANDed onto the JQL match rather than injected into the query string — so it composes with
+    whatever's already typed in the filter box instead of replacing it, and has its own reset
+    control (in the histogram's header and as a chip in the log view's info bar) distinct from
+    clearing the JQL query. The histogram's own bars keep charting the full JQL-filtered picture
+    regardless of an active time-range selection, so adjusting/replacing it stays easy.
+- **Copy/export filtered lines** — the "More" menu's new Export section copies (clipboard) or
+  downloads (`.txt` blob) exactly the currently filtered/on-screen lines — same
+  `compileQuery`/pause-freeze computation as the time histogram, so it's always what you're
+  actually looking at, not the raw unfiltered buffer.
+- **Background-tab attention signal** — an error/warn-level line arriving on a Log Lens tab you're
+  not currently looking at badges that tab in the tab bar and flashes `document.title` until you
+  activate it; resets the moment you do, no persistence.
+- **Silence/stalled-tailing indicator** — a soft, dismissable "quiet Xm" label appears on a tab
+  that's still `watching` but hasn't produced a new line in a few minutes, derived from SSE
+  line-arrival timestamps; never shown for `missing`/`error`/`idle`/`waiting` tabs, and
+  automatically re-arms after the next line if dismissed.
+- **Multi-select file open** — the file picker (`shared/components/FilePickerBody.jsx`) gained an
+  opt-in `multiple` prop (Log Lens only — JSON Lens's single-file callers are unaffected): checkbox
+  each file you want, then open them all as separate tabs in one action instead of one
+  round-trip per file.
+- **Saved tab groups** — name and persist the current set of open file tabs (`useTabGroups.js`,
+  same localStorage-backed pattern as saved filter presets) and reopen the whole group in one
+  click from the new header "Tab groups" menu — handy for a docker-compose stack's several log
+  files.
+- **Per-line outlier time-gap flag** — `EntryView` flags a line whose gap since the previous
+  *visible* (filtered) line is a statistical outlier (a fixed floor combined with a multiple of the
+  view's own median gap) with a small inline "+Xm Ys" chip. Deliberately not annotating every
+  line — the time histogram already covers coarse-grained "where are the gaps"; this only adds the
+  complementary signal of "how much did the current filter just skip over, between these two
+  specific lines," and only when it's unusual enough to be worth a glance.
 
 ## Done — JSON Lens
 
@@ -64,8 +108,25 @@ no such prior spec; they're native to this codebase.
 - Full CodeMirror editor: undo/redo, find/replace, fold all/unfold all, go-to-line, zoom
   (persisted font size), inline lint diagnostics (JSON parse errors anchored at the exact bad
   token, plus duplicate-object-key warnings computed from the real syntax tree).
+- **Edit / View mode** — an explicit per-tab mode boundary (not just a side effect of field
+  selection): Edit is the full toolbar and a freely editable document with no field-filter UI in
+  the way; View is read-only with a decluttered toolbar (Copy/Download/Wrap/Fold/Zoom/Find/Go to
+  line only) and is where field-filtering becomes available. View has two sub-modes — **Code**
+  (the same read-only CodeMirror rendering) and **Table** (`components/JsonTableView.jsx`, a real
+  key/type/value table with nested objects/arrays expandable in place, not just highlighted text).
+- **Find-in-view** (`components/JsonFindBar.jsx`) — View mode only, same non-destructive
+  highlight-and-step shape as Log Lens's own find bar (query, `n/total`, next/prev,
+  case-sensitivity toggle, Cmd/Ctrl+F), explicitly kept separate from field-filtering: find only
+  highlights plain-substring matches in whatever's currently displayed and steps through them,
+  field-filter actually prunes what's shown. Works in both View sub-modes — Code sub-mode
+  highlights matches as CodeMirror mark decorations and scrolls to the active one (an additive
+  `highlightRanges`/`activeHighlightRange` prop pair on the shared `JsonEditor.jsx`, opt-in for
+  every other caller); Table sub-mode highlights matching key/value cells, auto-expands just the
+  active match's ancestor rows so it's never hidden inside a collapsed row, and scrolls the active
+  row into view.
 - Field-filtering: fuzzy-search a field name, disambiguate via a picker when it's ambiguous, view
-  just the selected fields (read-only) with the rest pruned but ancestor paths kept for context.
+  just the selected fields (read-only, View mode only) with the rest pruned but ancestor paths kept
+  for context.
 - Format / Minify / Sort keys / Escape (wrap as a JSON string literal) / Unescape / indent
   selection / wrap toggle / copy / download / import-from-disk (native file input) / clear.
 - No forced "must always have a tab open" — closing the last tab (or starting fresh) shows a
