@@ -1,15 +1,6 @@
-import { ownTimestamp } from './timestamp.js';
+import { ownTimestamp, parseTimestampMs } from './timestamp.js';
 
 const DEFAULT_BUCKET_COUNT = 60;
-
-// ownTimestamp's plain-text form is space-separated ("YYYY-MM-DD HH:mm:ss");
-// Date.parse's handling of that exact shape isn't guaranteed across engines,
-// so normalize to ISO's "T" separator before parsing.
-function parseTimestampMs(ts) {
-  const iso = ts.includes(' ') && !ts.includes('T') ? ts.replace(' ', 'T') : ts;
-  const ms = Date.parse(iso);
-  return Number.isFinite(ms) ? ms : null;
-}
 
 // Buckets a set of entries (whatever's currently filtered/on-screen — the
 // caller decides that, this just counts) into `bucketCount` equal-width time

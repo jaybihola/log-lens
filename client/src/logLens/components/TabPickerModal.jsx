@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FilePickerBody } from '../../shared/components/FilePickerBody.jsx';
 import { RemoteQueryBody } from './RemoteQueryBody.jsx';
 
-export function TabPickerModal({ onOpenFile, onCreateRemote, onClose, recentFiles, onRemoveRecent, initialMode = 'file' }) {
+export function TabPickerModal({ onOpenFile, onOpenFiles, onCreateRemote, onClose, recentFiles, onRemoveRecent, initialMode = 'file' }) {
   const [mode, setMode] = useState(initialMode); // 'file' | 'api'
 
   return (
@@ -13,7 +13,16 @@ export function TabPickerModal({ onOpenFile, onCreateRemote, onClose, recentFile
           <button type="button" className={mode === 'api' ? 'active' : ''} onClick={() => setMode('api')}>Remote query</button>
         </div>
         {mode === 'file'
-          ? <FilePickerBody onOpen={onOpenFile} onClose={onClose} recentFiles={recentFiles} onRemoveRecent={onRemoveRecent} />
+          ? (
+            <FilePickerBody
+              onOpen={onOpenFile}
+              onOpenMultiple={onOpenFiles}
+              multiple
+              onClose={onClose}
+              recentFiles={recentFiles}
+              onRemoveRecent={onRemoveRecent}
+            />
+          )
           : <RemoteQueryBody onCreate={onCreateRemote} onClose={onClose} />}
       </div>
     </div>

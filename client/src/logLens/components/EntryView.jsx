@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { compileQuery } from '../filter/compile.js';
-import { ownTimestamp } from '../render/timestamp.js';
+import { ownTimestamp, parseTimestampMs, outlierGapThreshold } from '../render/timestamp.js';
 import { LineRow } from './LineRow.jsx';
 import { LogHeader } from './LogHeader.jsx';
 import { FindBar } from './FindBar.jsx';
@@ -49,6 +49,33 @@ export const EntryView = forwardRef(function EntryView({
   }, [effectiveBuffer, compiled, queryActive]);
 
   const matchCount = visible.length;
+
+  // Per-line time-gap outliers — deliberately scoped down from "annotate
+  // every line" (see TimeHistogram.jsx, which already covers coarse-grained
+  // "where are the gaps" via its density strip) to just flagging unusually
+  // large gaps between consecutive *visible* lines, i.e. what's left after
+  // the active filter — a signal the histogram doesn't give you, since it
+  // only shows density, not "how much time did the filter just skip over
+  // between these two specific lines."
+  const gapBySeq = useMemo(() => {
+    const deltas = [];
+    const rows = [];
+    let prevMs = null;
+    for (const { entry } of visible) {
+      const ts = ownTimestamp(entry.text);
+      const ms = ts ? parseTimestampMs(ts) : null;
+      const gap = (ms !== null && prevMs !== null) ? ms - prevMs : null;
+      if (gap !== null && gap >= 0) deltas.push(gap);
+      rows.push({ seq: entry.seq, gap });
+      if (ms !== null) prevMs = ms;
+    }
+    const threshold = outlierGapThreshold(deltas);
+    const map = new Map();
+    for (const r of rows) {
+      if (r.gap !== null && r.gap >= threshold) map.set(r.seq, r.gap);
+    }
+    return map;
+  }, [visible]);
 
   const findCompiled = useMemo(() => compileQuery(findQuery, { caseSensitive: findCaseSensitive }), [findQuery, findCaseSensitive]);
   const findActive = findOpen && findQuery.trim().length > 0;
@@ -180,6 +207,7 @@ export const EntryView = forwardRef(function EntryView({
                     findCaseSensitive={findCaseSensitive}
                     isCurrentFindMatch={entry.seq === currentFindSeq}
                     timestamp={ownTimestamp(entry.text)}
+                    gapMs={gapBySeq.get(entry.seq) ?? null}
                     expanded={expandedSeqs.has(entry.seq)}
                     onToggleExpand={toggleExpanded}
                     pinned={pinnedSeqs.has(entry.seq)}

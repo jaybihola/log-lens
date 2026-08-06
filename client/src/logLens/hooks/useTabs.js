@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { useLiveEvents } from './useLiveEvents.js';
+import { levelClass } from '../render/highlight.js';
 
 function makeDefaultUi() {
   return {
@@ -28,6 +29,12 @@ export function useTabs() {
   const [tabMetaList, setTabMetaList] = useState([]);
   const [activeTabId, setActiveTabIdState] = useState(null);
   const [renderTick, setRenderTick] = useState(0);
+  // Unseen error/warn line counts for background tabs — id -> count. A real
+  // React state (not the buffer ref) since a tab bar badge needs to actually
+  // re-render when this changes even while its own tab stays in the
+  // background; kept separate from tabMetaList since it changes far more
+  // often than tab metadata does.
+  const [attentionCounts, setAttentionCounts] = useState({});
 
   const scheduleRender = useCallback(() => {
     if (rafScheduled.current) return;
@@ -48,10 +55,20 @@ export function useTabs() {
 
   const ensureEntry = useCallback((id) => {
     if (!buffersRef.current.has(id)) {
-      buffersRef.current.set(id, { buffer: [], ui: makeDefaultUi() });
+      // lastLineAt seeds to "now" rather than null/0 — we don't know the
+      // true last-arrival time before the client started watching this tab,
+      // and seeding to "now" avoids the silence indicator (see TabBar.jsx)
+      // falsely claiming a brand-new tab has already been quiet for ages.
+      buffersRef.current.set(id, { buffer: [], ui: makeDefaultUi(), lastLineAt: Date.now() });
     }
     return buffersRef.current.get(id);
   }, []);
+
+  // Read-only, ref-backed (not React state) so polling it doesn't itself
+  // force a render — TabBar's own tick interval re-renders and reads this on
+  // each tick instead. Keeps the "silence indicator" cheap even with many
+  // fast-tailing background tabs.
+  const getLastLineAt = useCallback((id) => buffersRef.current.get(id)?.lastLineAt ?? null, []);
 
   const loadHistory = useCallback(async (id) => {
     const data = await api.history(id);
@@ -101,9 +118,18 @@ export function useTabs() {
     const last = entry.buffer[entry.buffer.length - 1];
     if (last && seq <= last.seq) return; // dup from the history/SSE boot race
     entry.buffer.push({ seq, text });
+    entry.lastLineAt = Date.now();
     if (tabId === activeTabIdRef.current) {
       dirtyBuffersRef.current.add(tabId);
       scheduleRender();
+    } else {
+      // Background-tab attention signal — never fires for the tab you're
+      // actually looking at (see the branch above), resets the moment the
+      // user activates the tab (activateTab, below).
+      const lvl = levelClass(text);
+      if (lvl === 'lvl-error' || lvl === 'lvl-warn') {
+        setAttentionCounts((prev) => ({ ...prev, [tabId]: (prev[tabId] || 0) + 1 }));
+      }
     }
   }, [ensureEntry, scheduleRender]);
 
@@ -179,6 +205,12 @@ export function useTabs() {
 
   const activateTab = useCallback(async (tabId) => {
     setActiveTab(tabId);
+    setAttentionCounts((prev) => {
+      if (!prev[tabId]) return prev;
+      const next = { ...prev };
+      delete next[tabId];
+      return next;
+    });
     await api.activateTab(tabId);
   }, [setActiveTab]);
 
@@ -189,6 +221,12 @@ export function useTabs() {
     await api.closeTab(tabId);
     buffersRef.current.delete(tabId);
     historyLoadedRef.current.delete(tabId);
+    setAttentionCounts((prev) => {
+      if (!(tabId in prev)) return prev;
+      const next = { ...prev };
+      delete next[tabId];
+      return next;
+    });
     const { tabs, active } = await refreshTabList();
     if (activeTabIdRef.current === tabId) {
       setActiveTab(active && tabs.some((t) => t.id === active) ? active : (tabs[0]?.id || null));
@@ -284,6 +322,8 @@ export function useTabs() {
     activeBuffer: activeEntry?.buffer || [],
     activeUi: activeEntry?.ui || makeDefaultUi(),
     renderTick,
+    attentionCounts,
+    getLastLineAt,
     openNewTab,
     openInTab,
     activateTab,
