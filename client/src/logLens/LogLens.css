@@ -425,9 +425,15 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    of the message text. Collapsed to zero height until the row (or its menu)
    is active. */
 .actions {
-  display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1-5);
+  display: flex; align-items: center; justify-content: center; gap: var(--space-1-5);
   padding: 0 var(--space-4-5); max-height: 0; overflow: hidden; opacity: 0;
-  transition: max-height 0.12s, opacity 0.12s;
+  /* max-height is intentionally not transitioned — animating it made the
+     fixed-height pill buttons get clipped at a mid-height slice for most of
+     the transition (their flat middle section, not their rounded end-caps),
+     which read as "not pill-shaped" until the transition finished. Snapping
+     height instantly and only fading opacity avoids that clipped frame
+     entirely while still collapsing to zero footprint at rest. */
+  transition: opacity 0.12s;
 }
 .log:not(.menu-open) .line-wrap:hover .actions,
 .line-wrap.menu-target .actions {
