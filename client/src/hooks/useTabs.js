@@ -160,6 +160,13 @@ export function useTabs() {
     await api.fetchTab(id);
   }, []);
 
+  // Same as fetchActiveTab but for any tab id — used by the tab bar's
+  // context menu ("Fetch new" on a background api tab) where the target
+  // isn't necessarily the active one.
+  const fetchTab = useCallback(async (id) => {
+    await api.fetchTab(id);
+  }, []);
+
   const openInTab = useCallback(async (tabId, filePath) => {
     const tab = await api.openFile(tabId, filePath);
     const entry = ensureEntry(tabId);
@@ -187,6 +194,24 @@ export function useTabs() {
       setActiveTab(active && tabs.some((t) => t.id === active) ? active : (tabs[0]?.id || null));
     }
   }, [refreshTabList, setActiveTab]);
+
+  // Bulk-close helpers for the tab bar's context menu — implemented as a
+  // sequence of individual closeTab calls (each its own server round trip)
+  // rather than a dedicated bulk endpoint, since this is a rare action and
+  // the server has no bulk-close route to begin with.
+  const closeOtherTabs = useCallback(async (keepId) => {
+    for (const t of tabMetaList) {
+      if (t.id !== keepId) await closeTab(t.id); // eslint-disable-line no-await-in-loop
+    }
+  }, [tabMetaList, closeTab]);
+
+  const closeTabsToRight = useCallback(async (tabId) => {
+    const idx = tabMetaList.findIndex((t) => t.id === tabId);
+    if (idx === -1) return;
+    for (const t of tabMetaList.slice(idx + 1)) {
+      await closeTab(t.id); // eslint-disable-line no-await-in-loop
+    }
+  }, [tabMetaList, closeTab]);
 
   const clearActiveTab = useCallback(async () => {
     const id = activeTabIdRef.current;
@@ -263,6 +288,9 @@ export function useTabs() {
     openInTab,
     activateTab,
     closeTab,
+    closeOtherTabs,
+    closeTabsToRight,
+    fetchTab,
     clearActiveTab,
     updateActiveTabUi,
     toggleExpanded,

@@ -10,6 +10,7 @@ import eventRoutes from './routes/events.js';
 import settingsRoutes from './routes/settings.js';
 import credentialsRoutes from './routes/credentials.js';
 import esFieldRoutes from './routes/esFields.js';
+import jsonLensRoutes from './routes/jsonLens.js';
 
 dotenv.config({ path: ENV_FILE, quiet: true });
 
@@ -22,6 +23,7 @@ await fastify.register(eventRoutes);
 await fastify.register(settingsRoutes);
 await fastify.register(credentialsRoutes);
 await fastify.register(esFieldRoutes);
+await fastify.register(jsonLensRoutes);
 
 fastify.get('/api/health', async () => ({ ok: true }));
 
