@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Send } from 'lucide-react';
+import { PanelLeft, Send } from 'lucide-react';
 import { useMockCollections } from './hooks/useMockCollections.js';
 import { useMockTabs } from './hooks/useMockTabs.js';
+import { useMockSidebar } from './hooks/useMockSidebar.js';
+import { useMockServers } from './hooks/useMockServers.js';
 import { mockViewApi } from './api/mockViewClient.js';
 import { MockSidebar } from './components/MockSidebar.jsx';
+import { MockServersSidebar } from './components/MockServersSidebar.jsx';
+import { MockServerDetail } from './components/MockServerDetail.jsx';
+import { RouteEditorModal } from './components/RouteEditorModal.jsx';
+import { NewMockServerModal } from './components/NewMockServerModal.jsx';
 import { RequestTabBar } from './components/RequestTabBar.jsx';
 import { RequestBuilder } from './components/RequestBuilder.jsx';
 import { ResponseViewer } from './components/ResponseViewer.jsx';
@@ -12,6 +18,7 @@ import { SaveRequestModal } from './components/SaveRequestModal.jsx';
 import { PromptModal } from '../shared/components/PromptModal.jsx';
 import { ConfirmModal } from '../shared/components/ConfirmModal.jsx';
 import { EmptyState } from '../shared/components/EmptyState.jsx';
+import { Tooltip } from '../shared/components/Tooltip.jsx';
 import { buildUrl, buildHeaders } from './requestUtils.js';
 import { interpolate } from './interpolate.js';
 
@@ -19,14 +26,13 @@ const REQUEST_FIELDS = (tab) => ({
   name: tab.name, method: tab.method, url: tab.url, params: tab.params, headers: tab.headers, body: tab.body, auth: tab.auth,
 });
 
-// Mock View's top-level component — a Postman-style request builder. Tabs
-// (useMockTabs) are local-first and localStorage-persisted like JSON Lens's;
-// collections + environments (useMockCollections) are server-synced like
-// JSON Lens's folder tree. Requests are sent through the server
-// (mockViewApi.send -> server/src/mockView/sender.js) to sidestep CORS.
-// `active` is accepted (App.jsx passes it to every tool) but unused so far —
-// nothing here has a global side effect worth gating yet, unlike Log Lens's
-// SSE connection or either tool's Cmd/Ctrl+K listener.
+// Mock View's top-level component — a Postman-style request builder (see
+// RequestBuilder/ResponseViewer) plus a local mock-server engine (see
+// MockServerDetail), switched via the two buttons in the header the same
+// way JsonToolbar's Edit/View toggle keeps a visible text label instead of
+// relying on Tooltip alone. Shares the app shell's `.app`/`.app-header`/
+// `.app-body` structure and tab-bar classes with Log Lens and JSON Lens
+// rather than inventing its own — see App.css.
 export function MockViewApp({ active: _active }) {
   const {
     collections, environments, activeEnvironmentId, activeEnvironment,
@@ -35,9 +41,18 @@ export function MockViewApp({ active: _active }) {
     createEnvironment, updateEnvironment, deleteEnvironment, setActiveEnvironment,
   } = useMockCollections();
   const {
-    tabs, activeTabId, activeTab, addTab, closeTab, activateTab, updateTab, openSavedRequest, markSaved, setResponse, setSending,
+    tabs, activeTabId, activeTab, addTab, closeTab, activateTab, updateTab, renameTab, openSavedRequest, markSaved, setResponse, setSending,
   } = useMockTabs();
+  const { sidebarOpen, toggleSidebar, sidebarWidth, resizeSidebar } = useMockSidebar();
+  const [screen, setScreen] = useState('requests'); // 'requests' | 'servers'
+  const [selectedServerId, setSelectedServerId] = useState(null);
+  const [serverError, setServerError] = useState(null);
   const [dialog, setDialog] = useState(null);
+  const {
+    servers, traffic, createServer, deleteServer, createRoute, updateRoute, deleteRoute, start, stop,
+  } = useMockServers(screen === 'servers' ? selectedServerId : null);
+
+  const selectedServer = servers.find((s) => s.id === selectedServerId) || null;
 
   const resolvedUrl = useMemo(
     () => (activeTab ? buildUrl(activeTab.url, activeTab.params, activeEnvironment?.variables) : ''),
@@ -82,37 +97,79 @@ export function MockViewApp({ active: _active }) {
     if (created) openSavedRequest(collectionId, created.id, created);
   };
 
-  return (
-    <div className="mock-shell">
-      <MockSidebar
-        collections={collections}
-        environments={environments}
-        activeEnvironmentId={activeEnvironmentId}
-        activeEnvironment={activeEnvironment}
-        onSetActiveEnvironment={setActiveEnvironment}
-        onOpenRequest={handleOpenRequest}
-        onNewCollection={() => setDialog({ type: 'new-collection' })}
-        onNewFolder={(collectionId) => setDialog({ type: 'new-folder', collectionId })}
-        onNewRequest={handleNewRequest}
-        onDeleteCollection={(id) => setDialog({ type: 'delete-collection', id })}
-        onDeleteFolder={(collectionId, folderId) => setDialog({ type: 'delete-folder', collectionId, folderId })}
-        onDeleteRequest={(collectionId, requestId) => setDialog({ type: 'delete-request', collectionId, requestId })}
-        onNewEnvironment={() => setDialog({ type: 'new-environment' })}
-        onEditEnvironment={(env) => setDialog({ type: 'edit-environment', environment: env })}
-      />
+  const handleStartServer = async (id) => {
+    setServerError(null);
+    try {
+      await start(id);
+    } catch (e) {
+      setServerError(e.message);
+    }
+  };
 
-      <div className="mock-body-col">
-        {tabs.length === 0 ? (
-          <EmptyState
-            icon={<Send size={28} strokeWidth={1.5} />}
-            title="No requests open"
-            subtitle="Start a new request, or open one from a collection on the left."
-            actions={[{ label: 'New request', primary: true, onClick: addTab }]}
-          />
+  return (
+    <div className="app">
+      <header className="app-header">
+        <span className="app-title">Mock View</span>
+        <Tooltip label="Sidebar" description="Collections and environments, or mock servers.">
+          <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
+            <PanelLeft size={16} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
+
+        {screen === 'requests' ? (
+          <RequestTabBar tabs={tabs} activeTabId={activeTabId} onActivate={activateTab} onClose={closeTab} onAdd={addTab} onRename={renameTab} />
         ) : (
-          <>
-            <RequestTabBar tabs={tabs} activeTabId={activeTabId} onActivate={activateTab} onClose={closeTab} onAdd={addTab} />
-            {activeTab && (
+          <span className="mock-header-spacer" />
+        )}
+
+        <div className="app-header-actions mock-screen-switch">
+          <button type="button" className={screen === 'requests' ? 'active' : ''} onClick={() => setScreen('requests')}>Requests</button>
+          <button type="button" className={screen === 'servers' ? 'active' : ''} onClick={() => setScreen('servers')}>Mock Servers</button>
+        </div>
+      </header>
+
+      <div className="app-body">
+        {sidebarOpen && screen === 'requests' && (
+          <MockSidebar
+            collections={collections}
+            environments={environments}
+            activeEnvironmentId={activeEnvironmentId}
+            activeEnvironment={activeEnvironment}
+            onSetActiveEnvironment={setActiveEnvironment}
+            onOpenRequest={handleOpenRequest}
+            onNewCollection={() => setDialog({ type: 'new-collection' })}
+            onNewFolder={(collectionId) => setDialog({ type: 'new-folder', collectionId })}
+            onNewRequest={handleNewRequest}
+            onDeleteCollection={(id) => setDialog({ type: 'delete-collection', id })}
+            onDeleteFolder={(collectionId, folderId) => setDialog({ type: 'delete-folder', collectionId, folderId })}
+            onDeleteRequest={(collectionId, requestId) => setDialog({ type: 'delete-request', collectionId, requestId })}
+            onNewEnvironment={() => setDialog({ type: 'new-environment' })}
+            onEditEnvironment={(env) => setDialog({ type: 'edit-environment', environment: env })}
+            width={sidebarWidth}
+            onResize={resizeSidebar}
+          />
+        )}
+        {sidebarOpen && screen === 'servers' && (
+          <MockServersSidebar
+            servers={servers}
+            selectedId={selectedServerId}
+            onSelect={(id) => { setSelectedServerId(id); setServerError(null); }}
+            onNewServer={() => setDialog({ type: 'new-server' })}
+            width={sidebarWidth}
+            onResize={resizeSidebar}
+          />
+        )}
+
+        {screen === 'requests' ? (
+          tabs.length === 0 ? (
+            <EmptyState
+              icon={<Send size={28} strokeWidth={1.5} />}
+              title="No requests open"
+              subtitle="Start a new request, or open one from a collection on the left."
+              actions={[{ label: 'New request', primary: true, onClick: addTab }]}
+            />
+          ) : (
+            activeTab && (
               <div className="mock-panes">
                 <RequestBuilder
                   tab={activeTab}
@@ -125,8 +182,20 @@ export function MockViewApp({ active: _active }) {
                 />
                 <ResponseViewer response={activeTab.response} sending={activeTab.sending} />
               </div>
-            )}
-          </>
+            )
+          )
+        ) : (
+          <MockServerDetail
+            server={selectedServer}
+            traffic={traffic}
+            error={serverError}
+            onStart={handleStartServer}
+            onStop={stop}
+            onDeleteServer={(id) => setDialog({ type: 'delete-server', id })}
+            onNewRoute={() => setDialog({ type: 'new-route', serverId: selectedServer.id })}
+            onEditRoute={(route) => setDialog({ type: 'edit-route', serverId: selectedServer.id, route })}
+            onDeleteRoute={(serverId, routeId) => deleteRoute(serverId, routeId)}
+          />
         )}
       </div>
 
@@ -189,6 +258,35 @@ export function MockViewApp({ active: _active }) {
           title="Delete request?"
           actions={[{ label: 'Delete', danger: true, onClick: () => { deleteRequest(dialog.collectionId, dialog.requestId); setDialog(null); } }]}
           onCancel={() => setDialog(null)}
+        />
+      )}
+      {dialog?.type === 'new-server' && (
+        <NewMockServerModal
+          onCancel={() => setDialog(null)}
+          onSave={async (name, port) => {
+            const created = await createServer(name, port);
+            if (created) setSelectedServerId(created.id);
+            setDialog(null);
+          }}
+        />
+      )}
+      {dialog?.type === 'delete-server' && (
+        <ConfirmModal
+          title="Delete mock server?"
+          message="This stops it (if running) and removes every route on it."
+          actions={[{ label: 'Delete', danger: true, onClick: () => { deleteServer(dialog.id); if (selectedServerId === dialog.id) setSelectedServerId(null); setDialog(null); } }]}
+          onCancel={() => setDialog(null)}
+        />
+      )}
+      {(dialog?.type === 'new-route' || dialog?.type === 'edit-route') && (
+        <RouteEditorModal
+          route={dialog.route || null}
+          onCancel={() => setDialog(null)}
+          onSave={(fields) => {
+            if (dialog.type === 'edit-route') updateRoute(dialog.serverId, dialog.route.id, fields);
+            else createRoute(dialog.serverId, fields);
+            setDialog(null);
+          }}
         />
       )}
     </div>

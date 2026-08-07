@@ -48,8 +48,8 @@ export function RequestBuilder({ tab, resolvedUrl, onChangeField, onSend, onSave
             </div>
           )}
         </div>
-        <button type="button" className="btn" onClick={onSave} disabled={!canSave}>Save</button>
-        <button type="button" className="btn primary" onClick={onSend} disabled={sending || !tab.url.trim()}>
+        <button type="button" onClick={onSave} disabled={!canSave}>Save</button>
+        <button type="button" className="btn-primary" onClick={onSend} disabled={sending || !tab.url.trim()}>
           {sending ? 'Sending…' : 'Send'}
         </button>
       </div>
@@ -82,7 +82,7 @@ export function RequestBuilder({ tab, resolvedUrl, onChangeField, onSend, onSave
                 <button
                   key={mode}
                   type="button"
-                  className={tab.body.mode === mode ? 'btn active' : 'btn ghost'}
+                  className={tab.body.mode === mode ? 'active' : ''}
                   onClick={() => onChangeField({ body: { ...tab.body, mode } })}
                 >
                   {mode === 'none' ? 'No body' : mode.toUpperCase()}

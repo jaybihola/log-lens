@@ -26,4 +26,16 @@ export const mockViewApi = {
 
   // ---- sending ----
   send: (payload) => jsonPost('/api/mock/send', payload),
+
+  // ---- mock servers ----
+  listMockServers: () => request('/api/mock/servers'),
+  createMockServer: (name, port) => jsonPost('/api/mock/servers', { name, port }),
+  updateMockServer: (id, patch) => jsonPut(`/api/mock/servers/${id}`, patch),
+  deleteMockServer: (id) => request(`/api/mock/servers/${id}`, { method: 'DELETE' }),
+  createMockRoute: (serverId, fields) => jsonPost(`/api/mock/servers/${serverId}/routes`, fields),
+  updateMockRoute: (serverId, routeId, patch) => jsonPut(`/api/mock/servers/${serverId}/routes/${routeId}`, patch),
+  deleteMockRoute: (serverId, routeId) => request(`/api/mock/servers/${serverId}/routes/${routeId}`, { method: 'DELETE' }),
+  startMockServer: (id) => jsonPost(`/api/mock/servers/${id}/start`, {}),
+  stopMockServer: (id) => jsonPost(`/api/mock/servers/${id}/stop`, {}),
+  mockServerTraffic: (id) => request(`/api/mock/servers/${id}/traffic`),
 };

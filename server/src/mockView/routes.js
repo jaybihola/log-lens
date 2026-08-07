@@ -3,8 +3,11 @@ import {
   createFolder, renameFolder, deleteFolder,
   createRequest, updateRequest, deleteRequest,
   listEnvironments, createEnvironment, updateEnvironment, deleteEnvironment, setActiveEnvironment,
+  listMockServers, createMockServer, updateMockServer, deleteMockServer,
+  createMockRoute, updateMockRoute, deleteMockRoute,
 } from './store.js';
 import { sendHttpRequest } from './sender.js';
+import { startMockServer, stopMockServer, mockServerStatus, mockServerTraffic } from './mockServerEngine.js';
 
 export default async function mockViewRoutes(fastify) {
   // ---- collections ----
@@ -94,4 +97,62 @@ export default async function mockViewRoutes(fastify) {
     }
     return sendHttpRequest({ method: method || 'GET', url, headers, body });
   });
+
+  // ---- mock servers ----
+  fastify.get('/api/mock/servers', async () => ({
+    servers: listMockServers().map((s) => ({ ...s, ...mockServerStatus(s.id) })),
+  }));
+
+  fastify.post('/api/mock/servers', async (req, reply) => {
+    if (!req.body?.name) return reply.code(400).send({ error: 'name required' });
+    return createMockServer(req.body.name, req.body.port);
+  });
+
+  fastify.put('/api/mock/servers/:id', async (req, reply) => {
+    const updated = updateMockServer(req.params.id, req.body || {});
+    if (!updated) return reply.code(404).send({ error: 'Mock server not found' });
+    return updated;
+  });
+
+  fastify.delete('/api/mock/servers/:id', async (req) => {
+    stopMockServer(req.params.id);
+    deleteMockServer(req.params.id);
+    return { ok: true };
+  });
+
+  fastify.post('/api/mock/servers/:id/routes', async (req, reply) => {
+    const route = createMockRoute(req.params.id, req.body || {});
+    if (!route) return reply.code(404).send({ error: 'Mock server not found' });
+    return route;
+  });
+
+  fastify.put('/api/mock/servers/:id/routes/:routeId', async (req, reply) => {
+    const updated = updateMockRoute(req.params.id, req.params.routeId, req.body || {});
+    if (!updated) return reply.code(404).send({ error: 'Route not found' });
+    return updated;
+  });
+
+  fastify.delete('/api/mock/servers/:id/routes/:routeId', async (req) => {
+    deleteMockRoute(req.params.id, req.params.routeId);
+    return { ok: true };
+  });
+
+  fastify.post('/api/mock/servers/:id/start', async (req, reply) => {
+    const result = await startMockServer(req.params.id);
+    if (!result.ok) return reply.code(400).send({ error: result.error });
+    return { ...result, ...mockServerStatus(req.params.id) };
+  });
+
+  fastify.post('/api/mock/servers/:id/stop', async (req) => {
+    const result = stopMockServer(req.params.id);
+    return { ...result, ...mockServerStatus(req.params.id) };
+  });
+
+  // Polled (not SSE) — traffic volume on a dev-tool mock server is low
+  // enough that a client polling every couple seconds while this screen is
+  // open is simpler than a second streaming transport alongside Log Lens's.
+  fastify.get('/api/mock/servers/:id/traffic', async (req) => ({
+    ...mockServerStatus(req.params.id),
+    hits: mockServerTraffic(req.params.id),
+  }));
 }

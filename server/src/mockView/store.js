@@ -14,9 +14,16 @@ function load() {
       collections: Array.isArray(parsed.collections) ? parsed.collections : [],
       environments: Array.isArray(parsed.environments) ? parsed.environments : [],
       activeEnvironmentId: typeof parsed.activeEnvironmentId === 'string' ? parsed.activeEnvironmentId : null,
+      // Only the config (name/port/routes) is persisted — whether a server is
+      // actually running, and its traffic log, are runtime-only state owned
+      // by mockServerEngine.js and reset on every restart (same reasoning as
+      // logLens/sse.js's in-memory client Set: nothing here survives a
+      // restart anyway, so persisting it would just be stale data waiting to
+      // mislead the next boot).
+      mockServers: Array.isArray(parsed.mockServers) ? parsed.mockServers : [],
     };
   } catch {
-    return { collections: [], environments: [], activeEnvironmentId: null };
+    return { collections: [], environments: [], activeEnvironmentId: null, mockServers: [] };
   }
 }
 
@@ -187,4 +194,82 @@ export function setActiveEnvironment(id) {
   state.activeEnvironmentId = id && state.environments.some((e) => e.id === id) ? id : null;
   persist();
   return state.activeEnvironmentId;
+}
+
+// ---- mock servers: config only (name/port/routes) — see load()'s comment
+// on why running state + traffic aren't here ----
+
+function makeRoute(fields = {}) {
+  return {
+    id: makeId('rt'),
+    method: (fields.method || 'GET').toUpperCase(),
+    path: fields.path || '/',
+    status: Number.isInteger(fields.status) ? fields.status : 200,
+    body: typeof fields.body === 'string' ? fields.body : '',
+    delayMs: Number.isFinite(fields.delayMs) ? fields.delayMs : 0,
+  };
+}
+
+function findMockServer(id) {
+  return state.mockServers.find((s) => s.id === id) || null;
+}
+
+// Read live, not cached — mockServerEngine.js re-reads this on every
+// incoming request, so editing a route's response while its server is
+// running takes effect on the next hit with no restart needed.
+export function getMockServer(id) {
+  return findMockServer(id);
+}
+
+export function listMockServers() {
+  return state.mockServers;
+}
+
+export function createMockServer(name, port) {
+  const server = { id: makeId('srv'), name: (name || 'New mock server').trim() || 'New mock server', port: Number(port) || 4010, routes: [] };
+  state.mockServers = [...state.mockServers, server];
+  persist();
+  return server;
+}
+
+export function updateMockServer(id, patch) {
+  const idx = state.mockServers.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  const next = { ...state.mockServers[idx] };
+  if (typeof patch.name === 'string' && patch.name.trim()) next.name = patch.name.trim();
+  if (Number.isFinite(Number(patch.port))) next.port = Number(patch.port);
+  state.mockServers = state.mockServers.map((s, i) => (i === idx ? next : s));
+  persist();
+  return next;
+}
+
+export function deleteMockServer(id) {
+  state.mockServers = state.mockServers.filter((s) => s.id !== id);
+  persist();
+}
+
+export function createMockRoute(serverId, fields) {
+  const server = findMockServer(serverId);
+  if (!server) return null;
+  const route = makeRoute(fields);
+  server.routes = [...server.routes, route];
+  persist();
+  return route;
+}
+
+export function updateMockRoute(serverId, routeId, patch) {
+  const server = findMockServer(serverId);
+  if (!server) return null;
+  const idx = server.routes.findIndex((r) => r.id === routeId);
+  if (idx === -1) return null;
+  server.routes[idx] = { ...server.routes[idx], ...patch, id: routeId };
+  persist();
+  return server.routes[idx];
+}
+
+export function deleteMockRoute(serverId, routeId) {
+  const server = findMockServer(serverId);
+  if (!server) return;
+  server.routes = server.routes.filter((r) => r.id !== routeId);
+  persist();
 }

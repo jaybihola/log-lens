@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, FolderPlus, Trash2, ChevronRight, ChevronDown, Pencil } from 'lucide-react';
 import { Dropdown } from '../../shared/components/Dropdown.jsx';
 import { Tooltip } from '../../shared/components/Tooltip.jsx';
+import { SidebarResizeHandle } from '../../shared/components/SidebarResizeHandle.jsx';
 
 const METHOD_CLASS = { GET: 'm-get', POST: 'm-post', PUT: 'm-put', PATCH: 'm-patch', DELETE: 'm-delete' };
 
@@ -43,13 +44,14 @@ function FolderRow({ folder, collectionId, expanded, onToggle, onOpen, onDeleteF
 
 // Collections tree (one level of folders, each holding requests, plus
 // ungrouped requests directly on the collection) + the environment picker —
-// the request-builder screen's left rail. Mirrors JSON Lens's
-// JsonFileSidebar in spirit (lazy nothing here though: a saved-requests tree
-// is small enough to just render whole, unlike a real filesystem).
+// the request-builder screen's left rail. Same `.fields-sidebar` shell
+// (controls row / scrollable sectioned list / resize handle) as JSON Lens's
+// JsonFileSidebar — lazy loading isn't needed here though, a saved-requests
+// tree is small enough to just render whole, unlike a real filesystem.
 export function MockSidebar({
   collections, environments, activeEnvironmentId, activeEnvironment, onSetActiveEnvironment,
   onOpenRequest, onNewCollection, onNewFolder, onNewRequest, onDeleteCollection, onDeleteFolder, onDeleteRequest,
-  onNewEnvironment, onEditEnvironment,
+  onNewEnvironment, onEditEnvironment, width, onResize,
 }) {
   const [expandedCollections, setExpandedCollections] = useState(() => new Set(collections.map((c) => c.id)));
   const [expandedFolders, setExpandedFolders] = useState(() => new Set());
@@ -68,17 +70,19 @@ export function MockSidebar({
   const envOptions = environments.map((e) => ({ value: e.id, label: e.name }));
 
   return (
-    <aside className="mock-sidebar">
-      <div className="mock-sidebar-head">
-        <span>Collections</span>
-        <Tooltip label="New collection">
-          <button type="button" className="icon-btn" onClick={onNewCollection}><Plus size={14} strokeWidth={1.75} /></button>
-        </Tooltip>
+    <aside className="fields-sidebar mock-sidebar" style={{ flexBasis: width }}>
+      <div className="fields-sidebar-controls">
+        <button type="button" className="sidebar-add-folder-btn" onClick={onNewCollection}>
+          <Plus size={14} strokeWidth={1.75} />
+          <span>New collection…</span>
+        </button>
       </div>
 
-      <div className="mock-tree">
-        {collections.length === 0 && <div className="mock-tree-empty">No collections yet — create one to start saving requests.</div>}
-        {collections.map((c) => {
+      <div className="fields-sidebar-list">
+        <div className="fields-sidebar-section">
+          <label>Collections ({collections.length})</label>
+          {collections.length === 0 && <p className="creds-hint fields-sidebar-empty">No collections yet — click above to create one.</p>}
+          {collections.map((c) => {
           const expanded = expandedCollections.has(c.id);
           return (
             <div key={c.id}>
@@ -117,41 +121,43 @@ export function MockSidebar({
               )}
             </div>
           );
-        })}
-      </div>
-
-      <div className="mock-env-card">
-        <div className="mock-env-card-head">
-          <span>Environment</span>
-          <div className="mock-env-card-actions">
-            {activeEnvironment && (
-              <Tooltip label="Edit variables">
-                <button type="button" className="icon-btn" onClick={() => onEditEnvironment(activeEnvironment)}><Pencil size={12} strokeWidth={1.75} /></button>
-              </Tooltip>
-            )}
-            <Tooltip label="New environment">
-              <button type="button" className="icon-btn" onClick={onNewEnvironment}><Plus size={12} strokeWidth={1.75} /></button>
-            </Tooltip>
-          </div>
+          })}
         </div>
-        <Dropdown
-          value={activeEnvironmentId}
-          options={envOptions}
-          onChange={onSetActiveEnvironment}
-          placeholder="No environment"
-          className="mock-env-dropdown"
-        />
-        {activeEnvironment && activeEnvironment.variables.length > 0 && (
-          <div className="mock-env-vars">
-            {activeEnvironment.variables.slice(0, 4).map((v) => (
-              <div key={v.id || v.key} className="mock-env-var-row">
-                <span className="k">{v.key}</span>
-                <span className="v">{v.key.toLowerCase().includes('token') || v.key.toLowerCase().includes('secret') ? '•'.repeat(Math.min(10, (v.value || '').length || 8)) : v.value}</span>
-              </div>
-            ))}
+
+        <div className="fields-sidebar-section">
+          <div className="mock-env-card-head">
+            <label style={{ padding: 0, border: 'none', margin: 0 }}>Environment</label>
+            <div className="mock-env-card-actions">
+              {activeEnvironment && (
+                <Tooltip label="Edit variables">
+                  <button type="button" className="icon-btn" onClick={() => onEditEnvironment(activeEnvironment)}><Pencil size={12} strokeWidth={1.75} /></button>
+                </Tooltip>
+              )}
+              <Tooltip label="New environment">
+                <button type="button" className="icon-btn" onClick={onNewEnvironment}><Plus size={12} strokeWidth={1.75} /></button>
+              </Tooltip>
+            </div>
           </div>
-        )}
+          <Dropdown
+            value={activeEnvironmentId}
+            options={envOptions}
+            onChange={onSetActiveEnvironment}
+            placeholder="No environment"
+            className="mock-env-dropdown"
+          />
+          {activeEnvironment && activeEnvironment.variables.length > 0 && (
+            <div className="mock-env-vars">
+              {activeEnvironment.variables.slice(0, 4).map((v) => (
+                <div key={v.id || v.key} className="mock-env-var-row">
+                  <span className="k">{v.key}</span>
+                  <span className="v">{v.key.toLowerCase().includes('token') || v.key.toLowerCase().includes('secret') ? '•'.repeat(Math.min(10, (v.value || '').length || 8)) : v.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      <SidebarResizeHandle width={width} onChange={onResize} />
     </aside>
   );
 }
