@@ -11,20 +11,22 @@ export function ExpandedDoc({ entry, pairedSeq, timeLabel, levelLabel, columns, 
   return (
     <div className="expanded-doc" onClick={(e) => e.stopPropagation()}>
       <div className="expanded-doc-tabs">
-        <button
-          type="button"
-          className={activeTab === 'table' ? 'expanded-doc-tab active' : 'expanded-doc-tab'}
-          onClick={() => setActiveTab('table')}
-        >
-          Table
-        </button>
-        <button
-          type="button"
-          className={activeTab === 'json' ? 'expanded-doc-tab active' : 'expanded-doc-tab'}
-          onClick={() => setActiveTab('json')}
-        >
-          JSON
-        </button>
+        <div className="expanded-doc-tab-group">
+          <button
+            type="button"
+            className={activeTab === 'table' ? 'expanded-doc-tab active' : 'expanded-doc-tab'}
+            onClick={() => setActiveTab('table')}
+          >
+            Table
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'json' ? 'expanded-doc-tab active' : 'expanded-doc-tab'}
+            onClick={() => setActiveTab('json')}
+          >
+            JSON
+          </button>
+        </div>
       </div>
       <div className="expanded-doc-body">
         {activeTab === 'table' ? (
