@@ -17,6 +17,11 @@ export const JSON_LENS_SCRATCHES_DIR = path.join(os.homedir(), '.log-lens-scratc
 // queried, an unrelated lifecycle to tabs/credentials/settings.
 export const INDEX_FIELDS_STATE_FILE = path.join(os.homedir(), '.log-lens-fields-state.json');
 
+// Mock View gets its own persistence file too, same reasoning as JSON Lens's
+// (see server/src/mockView/store.js) — collections (folders of saved
+// requests) + environments, an unrelated lifecycle to everything above.
+export const MOCK_VIEW_STATE_FILE = path.join(os.homedir(), '.log-lens-mock-state.json');
+
 const cliPath = process.argv[2] || process.env.LOG_FILE || null;
 
 export const config = {

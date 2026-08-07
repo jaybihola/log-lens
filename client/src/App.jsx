@@ -3,9 +3,11 @@ import { useAppMode } from './shell/useAppMode.js';
 import { ModeSidebar } from './shell/ModeSidebar.jsx';
 import { LogViewerApp } from './logLens/LogViewerApp.jsx';
 import { JsonFormatterApp } from './jsonLens/JsonFormatterApp.jsx';
+import { MockViewApp } from './mockView/MockViewApp.jsx';
 import './App.css';
 import './logLens/LogLens.css';
 import './jsonLens/JsonLens.css';
+import './mockView/MockView.css';
 
 // The app shell: a thin icon rail picks which independent tool is visible.
 // Both stay mounted at all times (just hidden via CSS, not unmounted) —

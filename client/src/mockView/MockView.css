@@ -1,0 +1,343 @@
+/* Mock View — own stylesheet, own class prefix (mock-*), so it can't
+   collide with logLens/jsonLens's CSS on load order — see
+   docs/ARCHITECTURE.md's "Directory structure" section. */
+
+.mock-shell {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+
+/* ---- sidebar ---- */
+.mock-sidebar {
+  flex: 0 0 250px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+}
+.mock-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--dimmer);
+}
+.mock-tree {
+  flex: 1;
+  overflow: auto;
+  padding: 0 var(--space-2) var(--space-3);
+}
+.mock-tree-empty {
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--dimmer);
+}
+.mock-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--fg);
+  cursor: pointer;
+}
+.mock-tree-node:hover { background: var(--panel-2); }
+.mock-tree-node:hover .mock-tree-action { opacity: 1; }
+.mock-tree-collection, .mock-tree-folder { color: var(--dim); font-weight: 600; }
+.mock-tree-chev { color: var(--dimmer); flex: 0 0 auto; }
+.mock-tree-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mock-tree-action {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  opacity: 0;
+  color: var(--dimmer);
+}
+.mock-tree-action:hover { color: var(--fg); }
+
+.mock-method-tag {
+  font: 700 9.5px/1 ui-monospace, Menlo, Consolas, monospace;
+  padding: 2px 5px;
+  border-radius: 5px;
+  flex: 0 0 auto;
+  letter-spacing: .2px;
+}
+.mock-method-tag.m-get { background: rgba(var(--info-rgb), .16); color: var(--info); }
+.mock-method-tag.m-post { background: rgba(var(--debug-rgb), .18); color: var(--debug); }
+.mock-method-tag.m-put, .mock-method-tag.m-patch { background: rgba(var(--warn-rgb), .18); color: var(--warn); }
+.mock-method-tag.m-delete, .mock-method-tag.m-head, .mock-method-tag.m-options { background: rgba(var(--error-rgb), .16); color: var(--error); }
+
+.mock-env-card {
+  margin: var(--space-1) var(--space-2-5) var(--space-3);
+  padding: var(--space-2-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel-sunken);
+}
+.mock-env-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--dimmer);
+  margin-bottom: var(--space-2);
+}
+.mock-env-card-actions { display: flex; gap: 2px; }
+.mock-env-card-actions .icon-btn { width: 20px; height: 20px; color: var(--dimmer); }
+.mock-env-dropdown { width: 100%; }
+.mock-env-vars { margin-top: var(--space-2); display: flex; flex-direction: column; gap: 2px; }
+.mock-env-var-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 11.5px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.mock-env-var-row .k { color: var(--dim); }
+.mock-env-var-row .v { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+
+/* ---- tabs + request/response body ---- */
+.mock-body-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.mock-reqtabs {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: var(--space-2) var(--space-2-5) 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  overflow-x: auto;
+}
+.mock-reqtab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px var(--space-3);
+  border-radius: 8px 8px 0 0;
+  font-size: var(--text-sm);
+  background: var(--panel-2);
+  color: var(--dim);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  position: relative;
+  top: 1px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.mock-reqtab.active { background: var(--panel-sunken); color: var(--fg); border-bottom: 1px solid var(--panel-sunken); }
+.mock-reqtab-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mock-reqtab-dirty { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+.mock-reqtab-x { color: var(--dimmer); display: flex; background: none; border: none; box-shadow: none; padding: 2px; }
+.mock-reqtab-x:hover { color: var(--fg); }
+.mock-reqtab-add {
+  width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+  color: var(--dimmer); background: none; border: none; box-shadow: none; flex: 0 0 auto;
+}
+
+.mock-panes {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.mock-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.mock-reqline {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--panel-sunken);
+  border-bottom: 1px solid var(--border);
+}
+.mock-method-select .dropdown-trigger {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--info);
+  background: rgba(var(--info-rgb), .12);
+  border-color: transparent;
+  min-width: 96px;
+}
+.mock-method-select-post .dropdown-trigger { color: var(--debug); background: rgba(var(--debug-rgb), .14); }
+.mock-method-select-put .dropdown-trigger, .mock-method-select-patch .dropdown-trigger { color: var(--warn); background: rgba(var(--warn-rgb), .14); }
+.mock-method-select-delete .dropdown-trigger, .mock-method-select-head .dropdown-trigger, .mock-method-select-options .dropdown-trigger { color: var(--error); background: rgba(var(--error-rgb), .12); }
+
+.mock-url-wrap { flex: 1; min-width: 0; }
+.mock-url-input {
+  width: 100%;
+  font-family: ui-monospace, Menlo, Consolas, monospace !important;
+  font-size: 12.5px !important;
+}
+.mock-url-preview {
+  margin-top: 4px;
+  padding: 0 2px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--dimmer);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mock-url-preview .var-resolved { color: var(--accent); }
+
+.mock-subtabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  overflow-x: auto;
+}
+.mock-subtab {
+  padding: 9px var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--dim);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.mock-subtab.active { color: var(--fg); border-color: var(--accent); font-weight: 600; }
+.mock-subtab-badge {
+  font-size: 10px;
+  background: var(--panel-3);
+  color: var(--dimmer);
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.mock-req-pane {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-3);
+  min-height: 0;
+}
+
+/* Params/Headers/response-headers table — real cell borders + tinted key
+   column, same visual language the fields sidebar recently adopted. */
+table.mock-kv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+table.mock-kv th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--dimmer);
+  font-weight: 700;
+  padding: 6px var(--space-2-5);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+}
+table.mock-kv td {
+  padding: 4px;
+  border: 1px solid var(--border);
+  vertical-align: middle;
+}
+table.mock-kv input[type="text"], table.mock-kv input[type="password"] {
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+table.mock-kv input[type="text"]:focus, table.mock-kv input[type="password"]:focus { box-shadow: none; border-radius: 4px; background: var(--panel-sunken); }
+table.mock-kv tr.kv-row-disabled { opacity: .45; }
+table.mock-kv .kv-remove { width: 22px; height: 22px; color: var(--dimmer); }
+table.mock-kv .kv-remove:hover { color: var(--error); }
+table.mock-kv-readonly td { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; padding: 6px var(--space-2-5); }
+table.mock-kv-readonly td.key { background: rgba(var(--accent-rgb), .07); font-weight: 600; white-space: nowrap; }
+
+.mock-body-editor { display: flex; flex-direction: column; gap: var(--space-2-5); height: 100%; }
+.mock-body-mode-row { display: flex; gap: 6px; }
+
+.mock-auth-editor { display: flex; flex-direction: column; gap: var(--space-2-5); max-width: 360px; }
+.mock-auth-basic-row { display: flex; gap: var(--space-2-5); }
+
+/* ---- response ---- */
+.mock-response {
+  flex: 0 0 46%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+}
+.mock-response-empty { align-items: center; justify-content: center; }
+.mock-response-empty-msg { color: var(--dimmer); font-size: var(--text-sm); }
+.mock-response-error { color: var(--error); }
+
+.mock-resp-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2-5) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.mock-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.mock-status-pill.st-2xx { background: rgba(var(--debug-rgb), .16); color: var(--debug); }
+.mock-status-pill.st-3xx { background: rgba(var(--info-rgb), .16); color: var(--info); }
+.mock-status-pill.st-4xx { background: rgba(var(--warn-rgb), .16); color: var(--warn); }
+.mock-status-pill.st-5xx, .mock-status-pill.st-error { background: rgba(var(--error-rgb), .16); color: var(--error); }
+.mock-resp-meta { display: flex; gap: var(--space-4); font-size: 11.5px; color: var(--dim); }
+.mock-resp-meta b { color: var(--fg); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.mock-resp-tabs { display: flex; gap: var(--space-4); margin-left: var(--space-2); }
+.mock-resp-tab { font-size: var(--text-sm); color: var(--dim); padding: 3px 0; border-bottom: 2px solid transparent; cursor: pointer; }
+.mock-resp-tab.active { color: var(--fg); border-color: var(--accent); font-weight: 600; }
+.mock-resp-tab-badge { font-size: 10px; background: var(--panel-3); color: var(--dimmer); padding: 1px 5px; border-radius: var(--radius-pill); margin-left: 4px; }
+.mock-resp-body { flex: 1; overflow: auto; padding: var(--space-3); min-height: 0; }
+.mock-resp-empty-body { color: var(--dimmer); font-size: var(--text-sm); }
+
+/* ---- modals ---- */
+.mock-env-modal { width: 420px; }
+.mock-env-modal input[type="text"] { width: 100%; margin-bottom: var(--space-2-5); }
+.mock-save-collection, .mock-save-folder { width: 100%; margin-bottom: var(--space-2-5); }

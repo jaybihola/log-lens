@@ -11,6 +11,7 @@ import settingsRoutes from './logLens/routes/settings.js';
 import credentialsRoutes from './logLens/routes/credentials.js';
 import esFieldRoutes from './logLens/routes/esFields.js';
 import jsonLensRoutes from './jsonLens/routes.js';
+import mockViewRoutes from './mockView/routes.js';
 
 dotenv.config({ path: ENV_FILE, quiet: true });
 
@@ -24,6 +25,7 @@ await fastify.register(settingsRoutes);
 await fastify.register(credentialsRoutes);
 await fastify.register(esFieldRoutes);
 await fastify.register(jsonLensRoutes);
+await fastify.register(mockViewRoutes);
 
 fastify.get('/api/health', async () => ({ ok: true }));
 

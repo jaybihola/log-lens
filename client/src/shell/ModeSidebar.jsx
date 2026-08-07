@@ -1,9 +1,10 @@
-import { ScrollText, Braces } from 'lucide-react';
+import { ScrollText, Braces, Send } from 'lucide-react';
 import { Tooltip } from '../shared/components/Tooltip.jsx';
 
 const MODES = [
   { id: 'logs', label: 'Log viewer', description: 'Tail local files or query a remote Elasticsearch/OpenSearch index.', Icon: ScrollText },
   { id: 'json', label: 'JSON Lens', description: 'Format, validate, and drill into JSON documents.', Icon: Braces },
+  { id: 'mock', label: 'Mock View', description: 'Compose and send HTTP requests, organized into collections.', Icon: Send },
 ];
 
 // The thin icon rail that switches between the app's separate tools — each
