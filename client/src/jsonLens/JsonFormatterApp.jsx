@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, PanelLeft, Braces, FileJson, FolderPlus, FileClock } from 'lucide-react';
+import { Plus, PanelLeft, Braces, FileJson, FolderPlus, FileClock, Command } from 'lucide-react';
+import { CommandBar } from '../shared/components/CommandBar.jsx';
+import { useCommandBar } from '../shared/hooks/useCommandBar.js';
 import { useJsonTabs, isTabDirty } from './hooks/useJsonTabs.js';
 import { useJsonFileSystem } from './hooks/useJsonFileSystem.js';
 import { useJsonSidebar } from './hooks/useJsonSidebar.js';
@@ -61,6 +63,7 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
   } = useJsonTabs();
   const fs = useJsonFileSystem();
   const { sidebarOpen, toggleSidebar, sidebarWidth, resizeSidebar } = useJsonSidebar();
+  const [commandBarOpen, setCommandBarOpen] = useCommandBar(active);
   const [indent, setIndent] = useState(2);
   const [sortKeys, setSortKeys] = useState(false);
   const [wrap, setWrap] = useState(true);
@@ -391,6 +394,80 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
     });
   };
 
+  // ⌘K command bar — same principle as Log Lens's: every entry wraps a
+  // handler that already exists for some button/popover elsewhere in this
+  // file, so there's exactly one source of truth per action. Entries that
+  // wouldn't currently apply are left out rather than shown disabled.
+  const commands = useMemo(() => {
+    const list = [
+      { id: 'new-tab', label: 'New blank tab', group: 'Tabs', onRun: addTab },
+      { id: 'open-file', label: 'Open file…', group: 'Tabs', onRun: () => setDialog({ type: 'open-file' }) },
+      { id: 'add-folder', label: 'Add folder…', group: 'Tabs', onRun: () => setDialog({ type: 'add-folder' }) },
+    ];
+    tabs.filter((t) => t.id !== activeTabId).forEach((t) => {
+      list.push({ id: `switch-${t.id}`, label: `Switch to: ${t.name}`, group: 'Tabs', onRun: () => activateTab(t.id) });
+    });
+    if (activeTab) {
+      list.push({ id: 'close-tab', label: 'Close current tab', group: 'Tabs', onRun: () => requestCloseTab(activeTab) });
+    }
+
+    list.push({ id: 'toggle-sidebar', label: sidebarOpen ? 'Hide files sidebar' : 'Show files sidebar', group: 'View', onRun: toggleSidebar });
+    if (activeTab) {
+      list.push({ id: 'toggle-mode', label: `Switch to ${mode === 'edit' ? 'View' : 'Edit'} mode`, group: 'View', onRun: () => setMode(mode === 'edit' ? 'view' : 'edit') });
+      if (isViewMode) {
+        list.push(
+          { id: 'view-code', label: 'Code view', group: 'View', onRun: () => setViewSubMode('code') },
+          { id: 'view-table', label: 'Table view', group: 'View', onRun: () => setViewSubMode('table') },
+        );
+      }
+      list.push(
+        { id: 'toggle-wrap', label: wrap ? 'Disable wrap lines' : 'Enable wrap lines', group: 'View', onRun: () => setWrap((v) => !v) },
+        { id: 'toggle-sort', label: sortKeys ? 'Disable sort keys' : 'Enable sort keys', group: 'View', onRun: () => setSortKeys((v) => !v) },
+        { id: 'zoom-in', label: 'Zoom in', group: 'View', onRun: () => stepFontSize(1) },
+        { id: 'zoom-out', label: 'Zoom out', group: 'View', onRun: () => stepFontSize(-1) },
+        { id: 'find', label: isViewMode ? 'Find in view' : 'Find / Replace', group: 'Edit', shortcut: '⌘F', onRun: () => (isViewMode ? setFindOpen((v) => !v) : editorRef.current?.find()) },
+        { id: 'goto-line', label: 'Go to line…', group: 'Edit', onRun: requestGotoLine },
+        { id: 'fold-all', label: 'Fold all', group: 'Edit', onRun: () => editorRef.current?.foldAll() },
+        { id: 'unfold-all', label: 'Unfold all', group: 'Edit', onRun: () => editorRef.current?.unfoldAll() },
+      );
+      if (displayedText.trim()) list.push({ id: 'copy', label: 'Copy', group: 'Edit', onRun: copy });
+      list.push({ id: 'download', label: 'Download', group: 'Edit', onRun: download });
+
+      if (mode === 'edit') {
+        if (dirty) list.push({ id: 'save', label: 'Save', group: 'Edit', shortcut: '⌘S', onRun: () => saveTab(activeTab) });
+        list.push(
+          { id: 'save-as', label: 'Save as…', group: 'Edit', onRun: () => setDialog({ type: 'save-as', tab: activeTab }) },
+          { id: 'import', label: 'Import file…', group: 'Edit', onRun: () => fileInputRef.current?.click() },
+          { id: 'undo', label: 'Undo', group: 'Edit', onRun: () => editorRef.current?.undo() },
+          { id: 'redo', label: 'Redo', group: 'Edit', onRun: () => editorRef.current?.redo() },
+        );
+        if (content.trim() && validation.valid) {
+          list.push(
+            { id: 'format', label: 'Format', group: 'Edit', onRun: format },
+            { id: 'minify', label: 'Minify', group: 'Edit', onRun: minify },
+          );
+        }
+        if (content.trim()) {
+          list.push(
+            { id: 'escape', label: 'Escape (wrap as string)', group: 'Edit', onRun: escapeString },
+            { id: 'unescape', label: 'Unescape (decode string)', group: 'Edit', onRun: unescapeString },
+            { id: 'clear', label: 'Clear', group: 'Edit', onRun: clear },
+          );
+        }
+        list.push(
+          { id: 'indent-2', label: 'Set indent: 2 spaces', group: 'Indent', onRun: () => setIndent(2) },
+          { id: 'indent-4', label: 'Set indent: 4 spaces', group: 'Indent', onRun: () => setIndent(4) },
+          { id: 'indent-tab', label: 'Set indent: Tab', group: 'Indent', onRun: () => setIndent('tab') },
+        );
+      }
+    }
+    return list;
+  }, [
+    tabs, activeTabId, activeTab, sidebarOpen, mode, isViewMode, wrap, sortKeys, dirty, content, validation,
+    displayedText, toggleSidebar, activateTab, requestCloseTab, copy, download, format, minify,
+    escapeString, unescapeString, clear, requestGotoLine, saveTab,
+  ]);
+
   // Cmd/Ctrl+S saves the active tab — gated on `active` since JSON Lens stays
   // mounted (state-preserving) even while Log Lens is the one on screen.
   useEffect(() => {
@@ -436,6 +513,11 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
     <div className="app">
       <header className="app-header">
         <span className="app-title">JSON Lens</span>
+        <Tooltip label="Files sidebar" description="Browse opened folders and saved scratches.">
+          <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
+            <PanelLeft size={16} strokeWidth={1.75} />
+          </button>
+        </Tooltip>
         <JsonTabBar
           tabs={tabs}
           activeTabId={activeTabId}
@@ -449,9 +531,9 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
           onCloseToRight={requestCloseToRight}
         />
         <div className="app-header-actions">
-          <Tooltip label="Files sidebar" description="Browse opened folders and saved scratches.">
-            <button type="button" className={sidebarOpen ? 'active icon-btn' : 'icon-btn'} onClick={toggleSidebar}>
-              <PanelLeft size={16} strokeWidth={1.75} />
+          <Tooltip label="Command bar" description="Search and run any action by typing. (⌘K)">
+            <button type="button" className="icon-btn" onClick={() => setCommandBarOpen(true)}>
+              <Command size={16} strokeWidth={1.75} />
             </button>
           </Tooltip>
         </div>
@@ -771,6 +853,7 @@ export function JsonFormatterApp({ active, importRequest, onImportHandled }) {
       )}
 
       {menu && <ContextMenu {...menu} onClose={closeMenu} />}
+      <CommandBar open={commandBarOpen} onClose={() => setCommandBarOpen(false)} commands={commands} />
     </div>
   );
 }

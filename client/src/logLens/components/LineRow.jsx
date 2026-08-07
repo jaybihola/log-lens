@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { ChevronDown, Braces, Pin } from 'lucide-react';
 import { detectAndHighlight, applyTermHits, highlightJson, tryFormatJson, visibleLength, truncateHtmlToVisibleChars, levelClass, LEVEL_LABELS, LONG_LINE_THRESHOLD } from '../render/highlight.js';
 import { formatTimeShort, formatGap } from '../render/timestamp.js';
 import { getColumnValue, isColumnValueObject } from '../render/jsonPaths.js';
@@ -14,7 +15,7 @@ export function LineRow({
   pinned, onTogglePinned, flash,
   columns, onToggleColumn,
   tsWidth, badgeWidth, extraColumnWidth,
-  onSendToJsonLens, onContextMenu, menuActive,
+  onSendToJsonLens, onApplyFilter, onContextMenu, menuActive,
 }) {
   const lvlClass = levelClass(entry.text);
 
@@ -51,16 +52,19 @@ export function LineRow({
   return (
     <div className={wrapClass}>
       <div className={rowClass} data-seq={entry.seq} onContextMenu={handleContextMenu}>
-        <Tooltip label={pinned ? 'Unpin this line' : 'Pin this line'}>
-          <span
-            className={`pin-col ${pinned ? 'pinned' : ''}`}
-            onClick={(e) => { e.stopPropagation(); onTogglePinned(entry.seq); }}
-          >
-            <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true">
-              <path d="M6.5 1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V5l2 3.5V10h-2.5v4.5a.5.5 0 0 1-1 0V10H5V8.5L7 5V1.5Z" />
-            </svg>
-          </span>
-        </Tooltip>
+        <span className="pin-col">
+          {pinned && (
+            <Tooltip label="Unpin this line">
+              <button
+                type="button"
+                className="pin-indicator"
+                onClick={(e) => { e.stopPropagation(); onTogglePinned(entry.seq); }}
+              >
+                <Pin size={11} strokeWidth={2} fill="currentColor" />
+              </button>
+            </Tooltip>
+          )}
+        </span>
         <span className="num">{entry.seq}</span>
         <span className="pair-col">
           {pairedSeq && (
@@ -100,19 +104,42 @@ export function LineRow({
         <span className="text" dangerouslySetInnerHTML={{ __html: html }} />
       </div>
       <div className="actions">
-        <CopyButton text={entry.text} title="Copy this line's raw text" />
-        <Tooltip label="View this line" description="Open in a line-numbered, highlighted viewer.">
-          <button type="button" onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}>
-            {expanded ? 'Show less' : 'Show more'}
+        <CopyButton
+          text={entry.text}
+          label="Copy"
+          title="Copy line"
+          description="Copy this line's raw text."
+          className="action-btn"
+          icon
+        />
+        <Tooltip label={pinned ? 'Unpin this line' : 'Pin this line'} description="Keep this line reachable regardless of the current filter.">
+          <button
+            type="button"
+            className={pinned ? 'action-btn active' : 'action-btn'}
+            onClick={(e) => { e.stopPropagation(); onTogglePinned(entry.seq); }}
+          >
+            <Pin size={13} strokeWidth={1.75} fill={pinned ? 'currentColor' : 'none'} />
+            {pinned ? 'Unpin' : 'Pin'}
           </button>
         </Tooltip>
         {onSendToJsonLens && (
           <Tooltip label="Open in JSON Lens" description="Send this line to a new JSON Lens tab.">
-            <button type="button" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
+            <button type="button" className="action-btn" onClick={(e) => { e.stopPropagation(); sendToJsonLens(); }}>
+              <Braces size={13} strokeWidth={1.75} />
               JSON Lens
             </button>
           </Tooltip>
         )}
+        <Tooltip label={expanded ? 'Show less' : 'Show more'} description="Open in a line-numbered, highlighted viewer.">
+          <button
+            type="button"
+            className={expanded ? 'action-btn active' : 'action-btn'}
+            onClick={(e) => { e.stopPropagation(); onToggleExpand(entry.seq); }}
+          >
+            <ChevronDown size={13} strokeWidth={1.75} className={expanded ? 'action-btn-chevron expanded' : 'action-btn-chevron'} />
+            {expanded ? 'Show less' : 'Show more'}
+          </button>
+        </Tooltip>
       </div>
       {expanded && (
         <ExpandedDoc
@@ -122,6 +149,7 @@ export function LineRow({
           levelLabel={LEVEL_LABELS[lvlClass] || 'INFO'}
           columns={columns}
           onToggleColumn={onToggleColumn}
+          onApplyFilter={onApplyFilter}
         />
       )}
     </div>

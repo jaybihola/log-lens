@@ -2,6 +2,13 @@
   color-scheme: dark;
 }
 
+/* "Calm workspace" palette — warm paper-toned neutrals (not cool blue-black)
+   and a single muted periwinkle accent used everywhere, in both themes, with
+   no per-tool re-tinting. Semantic level colors (error/warn/info/debug) and
+   the syntax-highlight set keep their original hues; only their exact values
+   were nudged to sit well against the new warm neutrals. See
+   docs/ARCHITECTURE.md for what each token is used for. */
+
 /* Default (dark) — also the explicit dark override so a manual toggle wins
    over the OS preference below. */
 :root, :root[data-theme="dark"] {
@@ -18,32 +25,33 @@
   --dim: #97969f;
   --dimmer: #6c6b73;
 
-  --accent: #6c9df5;
-  --accent-rgb: 108, 157, 245;
-  --accent-fg: #fff;
+  --accent: #9a9fe8;
+  --accent-rgb: 154, 159, 232;
+  --accent-fg: #14142b;
 
-  --error: #e0787b;
-  --error-rgb: 224, 120, 123;
-  --warn: #d3a25f;
-  --warn-rgb: 211, 162, 95;
-  --info: #6fb3a8;
-  --info-rgb: 111, 179, 168;
-  --debug: #8a9e7a;
-  --debug-rgb: 138, 158, 122;
+  --error: #ec8189;
+  --error-rgb: 236, 129, 137;
+  --warn: #e3ac62;
+  --warn-rgb: 227, 172, 98;
+  --info: #62c4b3;
+  --info-rgb: 98, 196, 179;
+  --debug: #98bd7e;
+  --debug-rgb: 152, 189, 126;
 
   --match: rgba(var(--accent-rgb), 0.35);
   --flash: #4a4420;
 
-  --syntax-key: #7cc7bb;
-  --syntax-string: #cf9c7c;
-  --syntax-number: #b2c98f;
-  --syntax-bool: #b696d6;
-  --syntax-punct: #86858e;
-  --syntax-tag: #7aa8d8;
-  --syntax-attr: #9fc0e0;
+  --syntax-key: #7fd1c9;
+  --syntax-string: #d9a274;
+  --syntax-number: #b6d18f;
+  --syntax-bool: #c19bec;
+  --syntax-punct: #837f7a;
+  --syntax-tag: #82b3e0;
+  --syntax-attr: #8fc0e8;
 
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --overlay: rgba(0, 0, 0, 0.5);
+  --shadow: 0 20px 45px -20px rgba(0, 0, 0, 0.6);
+  --shadow-soft: 0 8px 20px -12px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(10, 9, 8, 0.55);
 }
 
 /* Spacing + type scale — theme-independent (same in light and dark), so
@@ -69,6 +77,14 @@
   --text-base: 13px;
   --text-md: 14px;
   --text-lg: 16px;
+
+  /* Radius scale — softer/rounder than the old flat 6-8px across the board;
+     -pill is for tabs/chips that should read as fully rounded regardless of
+     their height. */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
 }
 
 :root[data-theme="light"] {
@@ -85,32 +101,33 @@
   --dim: #6c6c74;
   --dimmer: #9c9ba3;
 
-  --accent: #3568d4;
-  --accent-rgb: 53, 104, 212;
+  --accent: #5a5fc4;
+  --accent-rgb: 90, 95, 196;
   --accent-fg: #fff;
 
-  --error: #c2464a;
-  --error-rgb: 194, 70, 74;
-  --warn: #a06a24;
-  --warn-rgb: 160, 106, 36;
-  --info: #2f7d70;
-  --info-rgb: 47, 125, 112;
-  --debug: #5c7a49;
-  --debug-rgb: 92, 122, 73;
+  --error: #c94750;
+  --error-rgb: 201, 71, 80;
+  --warn: #a06a1f;
+  --warn-rgb: 160, 106, 31;
+  --info: #197c6c;
+  --info-rgb: 25, 124, 108;
+  --debug: #4f7a37;
+  --debug-rgb: 79, 122, 55;
 
   --match: rgba(var(--accent-rgb), 0.28);
   --flash: #fbf0b8;
 
-  --syntax-key: #0e7c6b;
-  --syntax-string: #9a5a2c;
-  --syntax-number: #4c7a2e;
-  --syntax-bool: #7d3fa3;
-  --syntax-punct: #7c7b84;
-  --syntax-tag: #1d5fa8;
-  --syntax-attr: #2f6690;
+  --syntax-key: #0d7f70;
+  --syntax-string: #9c5423;
+  --syntax-number: #4a7a2a;
+  --syntax-bool: #7136ad;
+  --syntax-punct: #8a8377;
+  --syntax-tag: #295d92;
+  --syntax-attr: #295d92;
 
-  --shadow: 0 10px 30px rgba(20, 20, 30, 0.12);
-  --overlay: rgba(20, 20, 25, 0.3);
+  --shadow: 0 20px 45px -22px rgba(60, 50, 30, 0.22);
+  --shadow-soft: 0 8px 20px -14px rgba(60, 50, 30, 0.16);
+  --overlay: rgba(40, 32, 20, 0.28);
 }
 
 * { box-sizing: border-box; }
@@ -136,43 +153,43 @@ button {
   background: var(--panel-2);
   color: var(--fg);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   padding: 7px var(--space-3);
   font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: background-color 0.12s, border-color 0.12s, color 0.12s, transform 0.08s, box-shadow 0.12s;
 }
 button:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--border-strong);
   background: var(--panel-3);
-  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.18);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.14);
 }
 button:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
 button.active {
-  background: rgba(var(--accent-rgb), 0.16);
-  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.15);
+  border-color: transparent;
   color: var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.25);
+  box-shadow: none;
 }
 button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
 
 input[type="text"], input[type="password"], input[type="datetime-local"], select {
-  background: var(--panel-2);
+  background: var(--panel-sunken);
   color: var(--fg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 7px var(--space-2-5);
   font-size: var(--text-base);
   min-width: 0; /* flex items default to a non-zero min-width and refuse to shrink otherwise */
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
 }
 
 /* The app doesn't use <input type="checkbox"> anywhere anymore — every
