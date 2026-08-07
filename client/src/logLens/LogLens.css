@@ -123,6 +123,19 @@
 .fields-sidebar-row-toggle { flex: 0 0 auto; width: 15px; display: inline-flex; align-items: center; justify-content: center; color: var(--dim); }
 .fields-sidebar-row.active .fields-sidebar-row-toggle { color: var(--accent); }
 
+/* ---- fields sidebar: pinned lines section ---- */
+
+.fields-sidebar-pinned-list { display: flex; flex-direction: column; gap: 1px; }
+.pinned-row-pin { flex: 0 0 auto; color: var(--dim); }
+.pinned-row-seq { flex: 0 0 auto; color: var(--dim); font-size: var(--text-xs); font-family: monospace; }
+.pinned-row-unpin {
+  flex: 0 0 auto; width: 18px; height: 18px; padding: 0; border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--dimmer); opacity: 0;
+}
+.pinned-row:hover .pinned-row-unpin, .pinned-row.menu-target .pinned-row-unpin { opacity: 1; }
+.pinned-row-unpin:hover { color: var(--fg); background: var(--panel-sunken); }
+
 .field-stats-popover {
   position: fixed; z-index: 90; width: 240px;
   background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-lg);

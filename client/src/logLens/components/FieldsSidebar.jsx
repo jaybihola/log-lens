@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Plus, FolderTree, List, UnfoldVertical, FoldVertical } from 'lucide-react';
+import { Check, Plus, FolderTree, List, UnfoldVertical, FoldVertical, Pin, X } from 'lucide-react';
 import { FieldStatsPopover } from './FieldStatsPopover.jsx';
 import { SidebarResizeHandle } from '../../shared/components/SidebarResizeHandle.jsx';
 import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
@@ -29,7 +29,10 @@ const HIDE_DELAY_MS = 200;
 // buffer — see FieldStatsPopover; that same popover's title is what reveals
 // a leaf's full path, since the tree itself only ever shows the last
 // segment (folders reveal theirs via FieldTree's own hover tooltip).
-export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApplyFilter, width, onResize }) {
+export function FieldsSidebar({
+  buffer, fields, columns, onToggleColumn, onApplyFilter, width, onResize,
+  pinnedSeqs, onJumpToSeq, onUnpin,
+}) {
   const [search, setSearch] = useState('');
   const [hover, setHover] = useState(null); // { field, top, left } | null
   const [expandedPaths, setExpandedPaths] = useState(() => new Set());
@@ -41,6 +44,13 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
   const columnSet = useMemo(() => new Set(columns), [columns]);
   const selected = useMemo(() => fields.filter((f) => columnSet.has(f.name)), [fields, columnSet]);
   const available = useMemo(() => fields.filter((f) => !columnSet.has(f.name)), [fields, columnSet]);
+
+  // Not memoized: buffer and pinnedSeqs are both mutated in place (see
+  // useTabs.js) rather than replaced, so a useMemo keyed on either reference
+  // would never see the mutation and would go stale — same reason
+  // MoreMenu.jsx recomputes these plainly on every render.
+  const bySeq = new Map(buffer.map((e) => [e.seq, e]));
+  const pinned = [...pinnedSeqs].sort((a, b) => a - b);
   // Computed across *all* fields (not per-section) so "expand all" reveals
   // every folder in both the selected and available trees at once — they
   // share this one expandedPaths set, so expanding "event" in one context
@@ -99,6 +109,17 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
       { label: 'Filter: field exists', onClick: () => onApplyFilter(path, '*') },
       { label: 'Filter: field is null', onClick: () => onApplyFilter(path, 'null') },
     ], path);
+  };
+
+  const handlePinnedContextMenu = (e, seq, entry) => {
+    hideNow();
+    openMenu(e, [
+      { label: 'Jump to line', onClick: () => onJumpToSeq(seq) },
+      { label: 'Copy line', onClick: () => navigator.clipboard.writeText(entry ? entry.text : ''), disabled: !entry },
+      { label: 'Copy line number', onClick: () => navigator.clipboard.writeText(String(seq)) },
+      { divider: true },
+      { label: 'Unpin', onClick: () => onUnpin(seq), danger: true },
+    ], `pinned:${seq}`);
   };
 
   const renderLeaf = (active) => (node, depth) => {
@@ -164,7 +185,7 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
           </Tooltip>
         </div>
       )}
-      {fields.length === 0 ? (
+      {fields.length === 0 && pinned.length === 0 ? (
         <p className="creds-hint fields-sidebar-empty">
           No cached fields for this tab — open a remote-query tab pointed at an index to browse its fields here.
         </p>
@@ -187,21 +208,41 @@ export function FieldsSidebar({ buffer, fields, columns, onToggleColumn, onApply
               />
             </div>
           )}
-          <div className="fields-sidebar-section">
-            <label>Available fields ({available.length})</label>
-            <FieldTree
-              items={available}
-              getPath={(f) => f.name}
-              searchQuery={search}
-              flat={flatView}
-              expanded={expandedPaths}
-              onToggleExpand={toggleExpand}
-              renderLeaf={renderLeaf(false)}
-              renderFolderAction={renderFolderAction}
-              onFolderContextMenu={(e, node) => handleContextMenu(e, node.path, columnSet.has(node.path))}
-              isFolderMenuActive={(node) => isMenuActive(node.path)}
-            />
-          </div>
+          {fields.length > 0 && (
+            <div className="fields-sidebar-section">
+              <label>Available fields ({available.length})</label>
+              <FieldTree
+                items={available}
+                getPath={(f) => f.name}
+                searchQuery={search}
+                flat={flatView}
+                expanded={expandedPaths}
+                onToggleExpand={toggleExpand}
+                renderLeaf={renderLeaf(false)}
+                renderFolderAction={renderFolderAction}
+                onFolderContextMenu={(e, node) => handleContextMenu(e, node.path, columnSet.has(node.path))}
+                isFolderMenuActive={(node) => isMenuActive(node.path)}
+              />
+            </div>
+          )}
+          {pinned.length > 0 && (
+            <div className="fields-sidebar-section">
+              <label>Pinned ({pinned.length})</label>
+              <div className="fields-sidebar-pinned-list">
+                {pinned.map((seq) => (
+                  <PinnedRow
+                    key={seq}
+                    seq={seq}
+                    entry={bySeq.get(seq)}
+                    menuActive={isMenuActive(`pinned:${seq}`)}
+                    onJump={() => onJumpToSeq(seq)}
+                    onUnpin={() => onUnpin(seq)}
+                    onContextMenu={(e) => handlePinnedContextMenu(e, seq, bySeq.get(seq))}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {hover && (
@@ -243,5 +284,29 @@ function FieldRow({ field, segment, depth, active, menuActive, onClick, onHover,
         {active ? <Check size={12} strokeWidth={2} /> : <Plus size={12} strokeWidth={2} />}
       </span>
     </button>
+  );
+}
+
+// A div, not a button — it needs to host its own nested Unpin button, which
+// a <button> can't contain. Click-to-jump and keyboard activation are wired
+// by hand to keep the same affordance as every other sidebar row.
+function PinnedRow({ seq, entry, menuActive, onJump, onUnpin, onContextMenu }) {
+  const text = entry ? entry.text.split('\n')[0].slice(0, 120) : '(no longer in buffer)';
+  return (
+    <div
+      className={['fields-sidebar-row', 'pinned-row', menuActive ? 'menu-target' : ''].filter(Boolean).join(' ')}
+      role="button"
+      tabIndex={0}
+      onClick={onJump}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onJump(); }}
+      onContextMenu={onContextMenu}
+    >
+      <Pin size={11} strokeWidth={1.75} className="pinned-row-pin" />
+      <span className="pinned-row-seq">#{seq}</span>
+      <span className="fields-sidebar-row-name">{text}</span>
+      <button type="button" className="pinned-row-unpin" title="Unpin line" onClick={(e) => { e.stopPropagation(); onUnpin(); }}>
+        <X size={11} strokeWidth={2} />
+      </button>
+    </div>
   );
 }

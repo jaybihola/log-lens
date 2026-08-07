@@ -340,6 +340,9 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               onApplyFilter={handleApplyFieldFilter}
               width={sidebarWidth}
               onResize={resizeSidebar}
+              pinnedSeqs={activeUi.pinnedSeqs}
+              onJumpToSeq={(seq) => entryViewRef.current?.scrollToSeq(seq)}
+              onUnpin={togglePinned}
             />
           )}
           <div className="app-main">
