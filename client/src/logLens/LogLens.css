@@ -479,12 +479,14 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    App.css's .json-editor); flush/borderless here now that the surrounding
    chrome is flat too, so it doesn't read as a card floating inside a card. */
 .expanded-doc-body .json-editor { border: none; border-radius: 0; }
+/* Real cell borders (border-collapse: collapse, every th/td bordered) —
+   with only horizontal row dividers and no vertical ones this read as a
+   plain key/value list rather than a table. */
 .field-table {
-  width: 100%; border-collapse: separate; border-spacing: 0;
+  width: 100%; border-collapse: collapse;
   font-family: 'SF Mono', Consolas, monospace; font-size: var(--text-sm);
 }
-.field-table tr { border-bottom: 1px solid var(--border-strong); }
-.field-table tr:last-child { border-bottom: none; }
+.field-table th, .field-table td { border: 1px solid var(--border-strong); }
 .field-table tr:hover { background: var(--panel-2); }
 /* No fixed width — a short key like "Time"/"Level"/"host" should hug its
    own content instead of stretching a wide fixed column and leaving a big
@@ -499,6 +501,7 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
   max-width: 220px; text-align: left; vertical-align: top;
   padding: var(--space-2) var(--space-3); color: var(--accent); font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--panel-2);
 }
 .field-table td { text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
 .field-table .field-actions-cell { width: 1%; white-space: nowrap; padding: var(--space-1) var(--space-2); }
