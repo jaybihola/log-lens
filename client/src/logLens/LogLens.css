@@ -452,22 +452,28 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 
 /* ---- expanded doc / field table ---- */
 
-/* Matches the app's other floating chrome (header/sidebar): shadow for
-   elevation instead of a hard border, one continuous background rather than
-   a differently-shaded tab strip band glued on top of it. */
-.expanded-doc { margin: 0 var(--space-4-5) var(--space-2-5) 21px; border-radius: var(--radius-md); background: var(--panel-sunken); overflow: hidden; cursor: default; box-shadow: var(--shadow-soft); }
-.expanded-doc-tabs { display: flex; align-items: center; gap: 2px; padding: var(--space-2) var(--space-2) 0; }
-/* Same pill-tab language as the app's main tab bar (.tab/.tab.active in
-   App.css) and .json-mode-toggle's segmented buttons, instead of the
-   old top-rounded-only "folder tab" shape this used to have. */
-.expanded-doc-tab { background: transparent; border: none; border-radius: var(--radius-pill); color: var(--dim); font-size: var(--text-sm); font-weight: 600; padding: var(--space-1) var(--space-3); cursor: pointer; }
-.expanded-doc-tab:hover { color: var(--fg); background: var(--panel-3); }
+/* .line-wrap's own border-left (its level-color accent spine — see
+   .line-wrap.lvl-error etc. above) spans its full height, including this
+   sibling — but this used to sit inset 21px away from that edge with a
+   rounded/shadowed card treatment, so it read as a disconnected floating
+   widget rather than something that belonged to the row above it. Now
+   flush against that same left edge, flat, full-bleed: the same visual
+   language the dense row list itself already uses (hairline dividers, no
+   cards), so it reads as this row's own content continuing downward
+   instead of a separate box dropped into the list. */
+.expanded-doc { background: var(--panel-sunken); border-top: 1px solid var(--border); cursor: default; }
+.expanded-doc-tabs { display: flex; align-items: center; padding: var(--space-2) var(--space-4-5) 0; }
+/* A real segmented-control container (same recipe as .json-mode-toggle in
+   JsonLens.css) instead of two pills floating loose on the same background
+   as everything else — reads as one two-option toggle at a glance. */
+.expanded-doc-tab-group { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-md); background: var(--panel-2); }
+.expanded-doc-tab { background: transparent; border: none; border-radius: var(--radius-sm); color: var(--dim); font-size: var(--text-sm); font-weight: 600; padding: var(--space-1) var(--space-3); cursor: pointer; }
+.expanded-doc-tab:hover { color: var(--fg); }
 .expanded-doc-tab.active { background: rgba(var(--accent-rgb), 0.15); color: var(--accent); }
-.expanded-doc-body { max-height: 420px; overflow: auto; padding: var(--space-2) var(--space-1-5) var(--space-1-5); }
+.expanded-doc-body { max-height: 420px; overflow: auto; padding: var(--space-2) var(--space-4-5) var(--space-3); }
 /* CodeViewer.jsx's JsonEditor already carries its own border+radius (see
-   App.css's .json-editor) — inside .expanded-doc, which has its own, that
-   doubled up into two flush nested rounded boxes. This container already
-   provides the chrome, so the editor here goes borderless/flush. */
+   App.css's .json-editor); flush/borderless here now that the surrounding
+   chrome is flat too, so it doesn't read as a card floating inside a card. */
 .expanded-doc-body .json-editor { border: none; border-radius: 0; }
 .field-table {
   width: 100%; border-collapse: separate; border-spacing: 0;
