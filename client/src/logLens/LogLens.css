@@ -486,8 +486,16 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
   width: 100%; border-collapse: collapse;
   font-family: 'SF Mono', Consolas, monospace; font-size: var(--text-sm);
 }
-.field-table th, .field-table td { border: 1px solid var(--border-strong); }
+.field-table th, .field-table td { border: 1px solid var(--border-strong); text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); }
 .field-table tr:hover { background: var(--panel-2); }
+/* A real header row (Field / Value) instead of dropping straight into data
+   — sticky since .expanded-doc-body scrolls independently for long
+   documents. */
+.field-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600;
+  color: var(--dim); background: var(--panel-3); padding: var(--space-1-5) var(--space-3);
+}
 /* No fixed width — a short key like "Time"/"Level"/"host" should hug its
    own content instead of stretching a wide fixed column and leaving a big
    empty gutter before the value starts. Deliberately *not* the `width: 1%`
@@ -497,15 +505,18 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    screenshot this replaced). nowrap + ellipsis avoids that failure mode
    entirely; max-width caps the rare very long dotted path, with the full
    key still available via the row's title attribute on hover. */
-.field-table th {
-  max-width: 220px; text-align: left; vertical-align: top;
-  padding: var(--space-2) var(--space-3); color: var(--accent); font-weight: 600;
+.field-table tbody th {
+  max-width: 220px; color: var(--accent); font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   background: var(--panel-2);
 }
-.field-table td { text-align: left; vertical-align: top; padding: var(--space-2) var(--space-3); color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-.field-table .field-actions-cell { width: 1%; white-space: nowrap; padding: var(--space-1) var(--space-2); }
-.field-actions { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+.field-table td { color: var(--fg); }
+/* Actions live inline at the end of the value cell, revealed on row hover —
+   not their own table column, which read as dead space on every row except
+   the one being hovered. */
+.field-value-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+.field-value-text { flex: 1 1 auto; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+.field-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.1s; }
 .field-table tr:hover .field-actions, .field-table tr:focus-within .field-actions { opacity: 1; }
 .field-action-btn {
   flex: 0 0 auto; width: 22px; height: 22px; padding: 0;
