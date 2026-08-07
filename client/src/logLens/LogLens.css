@@ -466,7 +466,11 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 /* A real segmented-control container (same recipe as .json-mode-toggle in
    JsonLens.css) instead of two pills floating loose on the same background
    as everything else — reads as one two-option toggle at a glance. */
-.expanded-doc-tab-group { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-md); background: var(--panel-2); }
+/* An explicit border, not just a background shade, because --panel-2 and
+   --panel-sunken (this sits on) are nearly the same light grey in the light
+   theme — a background-only distinction was invisible there regardless of
+   which panel token got picked. */
+.expanded-doc-tab-group { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-md); background: var(--panel-3); border: 1px solid var(--border); }
 .expanded-doc-tab { background: transparent; border: none; border-radius: var(--radius-sm); color: var(--dim); font-size: var(--text-sm); font-weight: 600; padding: var(--space-1) var(--space-3); cursor: pointer; }
 .expanded-doc-tab:hover { color: var(--fg); }
 .expanded-doc-tab.active { background: rgba(var(--accent-rgb), 0.15); color: var(--accent); }
