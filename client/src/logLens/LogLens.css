@@ -452,12 +452,18 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 
 /* ---- expanded doc / field table ---- */
 
-.expanded-doc { margin: 0 var(--space-4-5) var(--space-2-5) 21px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--panel-sunken); overflow: hidden; cursor: default; box-shadow: var(--shadow-soft); }
-.expanded-doc-tabs { display: flex; gap: 2px; padding: var(--space-1-5) var(--space-2) 0; background: var(--panel-3); border-bottom: 1px solid var(--border); }
-.expanded-doc-tab { background: transparent; border: 1px solid transparent; border-bottom: none; border-radius: var(--radius-sm) var(--radius-sm) 0 0; color: var(--dim); font-size: var(--text-sm); padding: var(--space-1-5) var(--space-3); cursor: pointer; }
-.expanded-doc-tab:hover { color: var(--fg); }
-.expanded-doc-tab.active { background: var(--panel-sunken); border-color: var(--border); color: var(--accent); font-weight: 600; }
-.expanded-doc-body { max-height: 420px; overflow: auto; padding: var(--space-1-5); }
+/* Matches the app's other floating chrome (header/sidebar): shadow for
+   elevation instead of a hard border, one continuous background rather than
+   a differently-shaded tab strip band glued on top of it. */
+.expanded-doc { margin: 0 var(--space-4-5) var(--space-2-5) 21px; border-radius: var(--radius-md); background: var(--panel-sunken); overflow: hidden; cursor: default; box-shadow: var(--shadow-soft); }
+.expanded-doc-tabs { display: flex; align-items: center; gap: 2px; padding: var(--space-2) var(--space-2) 0; }
+/* Same pill-tab language as the app's main tab bar (.tab/.tab.active in
+   App.css) and .json-mode-toggle's segmented buttons, instead of the
+   old top-rounded-only "folder tab" shape this used to have. */
+.expanded-doc-tab { background: transparent; border: none; border-radius: var(--radius-pill); color: var(--dim); font-size: var(--text-sm); font-weight: 600; padding: var(--space-1) var(--space-3); cursor: pointer; }
+.expanded-doc-tab:hover { color: var(--fg); background: var(--panel-3); }
+.expanded-doc-tab.active { background: rgba(var(--accent-rgb), 0.15); color: var(--accent); }
+.expanded-doc-body { max-height: 420px; overflow: auto; padding: var(--space-2) var(--space-1-5) var(--space-1-5); }
 /* CodeViewer.jsx's JsonEditor already carries its own border+radius (see
    App.css's .json-editor) — inside .expanded-doc, which has its own, that
    doubled up into two flush nested rounded boxes. This container already
