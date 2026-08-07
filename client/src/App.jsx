@@ -39,6 +39,9 @@ function App() {
       <div className={mode === 'json' ? 'mode-pane' : 'mode-pane hidden'}>
         <JsonFormatterApp active={mode === 'json'} importRequest={jsonImport} onImportHandled={() => setJsonImport(null)} />
       </div>
+      <div className={mode === 'mock' ? 'mode-pane' : 'mode-pane hidden'}>
+        <MockViewApp active={mode === 'mock'} />
+      </div>
     </div>
   );
 }
