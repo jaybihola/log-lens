@@ -1,9 +1,10 @@
-import { ScrollText, Braces } from 'lucide-react';
+import { ScrollText, Braces, GitCompare } from 'lucide-react';
 import { Tooltip } from '../shared/components/Tooltip.jsx';
 
 const MODES = [
   { id: 'logs', label: 'Log viewer', description: 'Tail local files or query a remote Elasticsearch/OpenSearch index.', Icon: ScrollText },
   { id: 'json', label: 'JSON Lens', description: 'Format, validate, and drill into JSON documents.', Icon: Braces },
+  { id: 'diff', label: 'Diff Lens', description: 'Compare two pasted texts side-by-side or unified, with syntax highlighting.', Icon: GitCompare },
 ];
 
 // The thin icon rail that switches between the app's separate tools — each

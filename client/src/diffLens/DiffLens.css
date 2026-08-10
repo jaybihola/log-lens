@@ -1,0 +1,190 @@
+/* Diff Lens — its own stylesheet, self-contained (derives diff-decoration
+   colors from the app's existing --debug-rgb/--error-rgb tokens rather than
+   adding new ones to index.css), so it automatically follows the light/dark
+   toggle the same way every other tool does. */
+
+:root {
+  --diff-ins-bg: rgba(var(--debug-rgb), 0.16);
+  --diff-ins-text-bg: rgba(var(--debug-rgb), 0.32);
+  --diff-del-bg: rgba(var(--error-rgb), 0.14);
+  --diff-del-text-bg: rgba(var(--error-rgb), 0.3);
+  --diff-changed-gutter: rgba(var(--accent-rgb), 0.55);
+}
+
+/* ---- scratches sidebar: the leaf scratch row — base sidebar layout
+   (.fields-sidebar, .fields-sidebar-list/-section, .field-tree) is shared,
+   see ../App.css. Same rules as jsonLens/JsonLens.css's .json-file-row,
+   renamed so this tool doesn't depend on that stylesheet. ---- */
+
+.diff-file-row {
+  width: 100%; display: flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-2); border-radius: 5px; border: none; background: none;
+  color: var(--fg); text-align: left; cursor: pointer; font-size: var(--text-sm);
+  position: relative;
+}
+.diff-file-sidebar:not(.menu-open) .diff-file-row:hover, .diff-file-row.menu-target { background: var(--panel-3); }
+.diff-file-row.active { color: var(--accent); background: rgba(var(--accent-rgb), 0.1); }
+.diff-file-row-icon { flex: 0 0 auto; color: var(--dim); }
+.diff-file-row.active .diff-file-row-icon { color: var(--accent); }
+.diff-file-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; }
+.diff-file-row-dirty { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+/* ---- toolbar (siblings of json-toolbar/json-mode-toggle, kept separate so
+   this tool doesn't depend on jsonLens/JsonLens.css) ---- */
+
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+
+.diff-mode-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--panel-sunken);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.diff-toolbar-divider { width: 1px; height: 20px; background: var(--border); flex: 0 0 auto; margin: 0 2px; }
+
+.diff-language-dropdown { min-width: 130px; max-width: 160px; }
+
+.diff-ignore-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 9px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.diff-mode-toggle .icon-btn, .icon-btn:has(.diff-ignore-badge) { position: relative; }
+
+.diff-ignore-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1-5);
+  padding: var(--space-2);
+  min-width: 220px;
+}
+
+.diff-ignore-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.diff-ignore-note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--dim);
+  max-width: 220px;
+}
+
+.diff-stats {
+  display: flex;
+  gap: var(--space-1-5);
+  font-size: var(--text-sm);
+  font-family: monospace;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.diff-stat-added { color: var(--debug); }
+.diff-stat-removed { color: var(--error); }
+.diff-stat-modified { color: var(--warn); }
+
+.diff-copy-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: var(--space-1);
+}
+
+.diff-copy-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  font-size: var(--text-base);
+  cursor: pointer;
+}
+
+.diff-copy-menu button:hover:not(:disabled) { background: var(--panel-3); }
+.diff-copy-menu button:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- diff view body ---- */
+
+.diff-editor-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  margin: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.diff-side-by-side { flex: 1; min-width: 0; }
+
+/* @codemirror/merge's MergeView is unscrollable/unsized by default — its own
+   docs say to give .cm-mergeView an explicit height + overflow. */
+.diff-side-by-side .cm-mergeView,
+.diff-side-by-side .cm-mergeViewEditors {
+  height: 100%;
+}
+.diff-side-by-side .cm-mergeView { overflow: auto; }
+.diff-side-by-side .cm-editor { height: 100%; }
+
+/* The vertical divider @codemirror/merge renders between the two panes —
+   default is nearly invisible against --panel, which read as "one blank
+   box" rather than two distinct input areas. */
+.diff-side-by-side .cm-mergeSpacer { background: var(--border) !important; width: 2px !important; }
+
+.diff-unified-view { flex: 1; min-width: 0; height: 100%; }
+.diff-unified-view .cm-editor, .diff-unified-view .cm-scroller { height: 100%; }
+
+/* ---- diff decoration colors — real class names emitted by
+   @codemirror/merge (grepped from its built dist, not guessed).
+   `cm-changedLine`/`cm-changedText` are shared by BOTH sides of a modified
+   line, so they default to the "new content" green below and get flipped to
+   red specifically inside `cm-merge-a` (the left/original pane) — otherwise
+   a line being replaced shows green on the side where it's disappearing
+   from, which reads backwards. ---- */
+
+.cm-changedLine, .cm-insertedLine, .cm-inlineChangedLine { background: var(--diff-ins-bg) !important; }
+.cm-changedText { background: var(--diff-ins-text-bg) !important; }
+.cm-deletedLine { background: var(--diff-del-bg) !important; }
+.cm-deletedText { background: var(--diff-del-text-bg) !important; text-decoration: none !important; }
+.cm-changedLineGutter, .cm-inlineChangedLineGutter { background: var(--diff-changed-gutter) !important; }
+.cm-deletedLineGutter { background: var(--error) !important; }
+
+.cm-merge-a .cm-changedLine, .cm-merge-a .cm-inlineChangedLine { background: var(--diff-del-bg) !important; }
+.cm-merge-a .cm-changedText { background: var(--diff-del-text-bg) !important; }
+
+.cm-collapsedLines {
+  background: var(--panel-3);
+  color: var(--dim);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.cm-collapsedLines:hover { color: var(--fg); }

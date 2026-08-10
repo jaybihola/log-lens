@@ -11,6 +11,13 @@ export const ENV_FILE = path.join(process.cwd(), '.env');
 export const JSON_LENS_STATE_FILE = path.join(os.homedir(), '.log-lens-json-state.json');
 export const JSON_LENS_SCRATCHES_DIR = path.join(os.homedir(), '.log-lens-scratches');
 
+// Diff Lens's own scratches — same shape as JSON Lens's (see
+// server/src/diffLens/store.js), but its own file/folder since a diff
+// scratch stores a small structured object (leftText/rightText/language/
+// options), not a single content string.
+export const DIFF_LENS_STATE_FILE = path.join(os.homedir(), '.log-lens-diff-state.json');
+export const DIFF_LENS_SCRATCHES_DIR = path.join(os.homedir(), '.log-lens-diff-scratches');
+
 // Index field name/type cache, accumulated from real query results (see
 // logLens/es/fieldCache.js) — deliberately its own file rather than folded
 // into STATE_FILE: it grows indefinitely across every environment+index ever

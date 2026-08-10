@@ -1,0 +1,110 @@
+import { useEffect, useRef, useState } from 'react';
+import { ContextMenu } from '../../shared/components/ContextMenu.jsx';
+import { useContextMenu } from '../../shared/hooks/useContextMenu.js';
+import { isTabDirty } from '../hooks/useDiffTabs.js';
+
+const SCROLL_STEP = 200;
+
+// Leaner sibling of JsonTabBar.jsx — same dirty-dot/rename/overflow-scroll
+// behavior, but no save-related origin beyond "new" vs. "scratch" (no file
+// binding, see useDiffTabs.js).
+export function DiffTabBar({
+  tabs, activeTabId, onActivate, onRequestClose, onAdd, onRename, onDuplicate, onRevert, onCloseOthers, onCloseToRight,
+}) {
+  const [editingId, setEditingId] = useState(null);
+  const [draftName, setDraftName] = useState('');
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const { menu, openMenu, closeMenu, isMenuActive } = useContextMenu();
+
+  const updateScrollState = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    const observer = new ResizeObserver(updateScrollState);
+    observer.observe(el);
+    el.addEventListener('scroll', updateScrollState);
+    return () => {
+      observer.disconnect();
+      el.removeEventListener('scroll', updateScrollState);
+    };
+  }, [tabs.length]);
+
+  const scrollBy = (delta) => scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
+
+  const startRename = (tab) => { setEditingId(tab.id); setDraftName(tab.name); };
+  const commitRename = () => {
+    if (editingId && draftName.trim()) onRename(editingId, draftName.trim());
+    setEditingId(null);
+  };
+
+  const handleContextMenu = (e, tab, index) => {
+    openMenu(e, [
+      { label: 'Rename', onClick: () => startRename(tab) },
+      { label: 'Duplicate', onClick: () => onDuplicate(tab.id) },
+      { label: 'Revert to saved', onClick: () => onRevert(tab.id), disabled: !isTabDirty(tab), danger: true },
+      { divider: true },
+      { label: 'Close', onClick: () => onRequestClose(tab) },
+      { label: 'Close others', onClick: () => onCloseOthers(tab.id), disabled: tabs.length <= 1 },
+      { label: 'Close tabs to the right', onClick: () => onCloseToRight(tab.id), disabled: index === tabs.length - 1 },
+    ], tab.id);
+  };
+
+  return (
+    <div className={menu ? 'tab-bar menu-open' : 'tab-bar'}>
+      {canScrollLeft && (
+        <button type="button" className="tab-scroll-btn" onClick={() => scrollBy(-SCROLL_STEP)}>‹</button>
+      )}
+      <div className="tab-scroll" ref={scrollRef}>
+        {tabs.map((tab, index) => (
+          <div
+            key={tab.id}
+            className={[
+              'tab',
+              tab.id === activeTabId ? 'active' : '',
+              isMenuActive(tab.id) ? 'menu-target' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={() => onActivate(tab.id)}
+            onDoubleClick={() => startRename(tab)}
+            onContextMenu={(e) => handleContextMenu(e, tab, index)}
+            title="Double-click (or right-click) to rename"
+          >
+            {editingId === tab.id ? (
+              <input
+                autoFocus
+                className="tab-rename-input"
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
+                  if (e.key === 'Escape') { e.preventDefault(); setEditingId(null); }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <>
+                <span className="tab-label">{tab.name}</span>
+                {isTabDirty(tab) && <span className="tab-dirty-dot" />}
+              </>
+            )}
+            <button type="button" className="tab-close" onClick={(e) => { e.stopPropagation(); onRequestClose(tab); }}>×</button>
+          </div>
+        ))}
+      </div>
+      {canScrollRight && (
+        <button type="button" className="tab-scroll-btn" onClick={() => scrollBy(SCROLL_STEP)}>›</button>
+      )}
+      <button type="button" className="tab-add" onClick={onAdd}>+</button>
+      {menu && <ContextMenu {...menu} onClose={closeMenu} />}
+    </div>
+  );
+}

@@ -3,9 +3,11 @@ import { useAppMode } from './shell/useAppMode.js';
 import { ModeSidebar } from './shell/ModeSidebar.jsx';
 import { LogViewerApp } from './logLens/LogViewerApp.jsx';
 import { JsonFormatterApp } from './jsonLens/JsonFormatterApp.jsx';
+import { DiffLensApp } from './diffLens/DiffLensApp.jsx';
 import './App.css';
 import './logLens/LogLens.css';
 import './jsonLens/JsonLens.css';
+import './diffLens/DiffLens.css';
 
 // The app shell: a thin icon rail picks which independent tool is visible.
 // Both stay mounted at all times (just hidden via CSS, not unmounted) —
@@ -36,6 +38,9 @@ function App() {
       </div>
       <div className={mode === 'json' ? 'mode-pane' : 'mode-pane hidden'}>
         <JsonFormatterApp active={mode === 'json'} importRequest={jsonImport} onImportHandled={() => setJsonImport(null)} />
+      </div>
+      <div className={mode === 'diff' ? 'mode-pane' : 'mode-pane hidden'}>
+        <DiffLensApp active={mode === 'diff'} />
       </div>
     </div>
   );
