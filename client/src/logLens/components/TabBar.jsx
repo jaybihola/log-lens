@@ -50,6 +50,7 @@ function formatQuiet(ms) {
 
 export function TabBar({
   tabs, activeTabId, onActivate, onClose, onAdd, onReload, onCloseOthers, onCloseToRight,
+  onDuplicate, onDuplicateModify, onEdit,
   attentionCounts = {}, getLastLineAt,
 }) {
   const scrollRef = useRef(null);
@@ -90,14 +91,24 @@ export function TabBar({
   const scrollBy = (delta) => scrollRef.current?.scrollBy({ left: delta, behavior: 'smooth' });
 
   const handleContextMenu = (e, tab, index) => {
-    openMenu(e, [
+    const items = [
       { label: tab.kind === 'api' ? 'Fetch new' : 'Reload', onClick: () => onReload(tab) },
+    ];
+    if (tab.kind === 'api') {
+      items.push(
+        { label: 'Duplicate', onClick: () => onDuplicate(tab) },
+        { label: 'Duplicate and modify…', onClick: () => onDuplicateModify(tab) },
+        { label: 'Edit…', onClick: () => onEdit(tab) },
+      );
+    }
+    items.push(
       { label: 'Copy tab info', onClick: () => navigator.clipboard.writeText(tab.kind === 'api' ? `${tab.environment}: ${tabLabel(tab)}` : (tab.file || '')) },
       { divider: true },
       { label: 'Close', onClick: () => onClose(tab.id) },
       { label: 'Close others', onClick: () => onCloseOthers(tab.id), disabled: tabs.length <= 1 },
       { label: 'Close tabs to the right', onClick: () => onCloseToRight(tab.id), disabled: index === tabs.length - 1 },
-    ], tab.id);
+    );
+    openMenu(e, items, tab.id);
   };
 
   return (

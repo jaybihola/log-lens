@@ -429,7 +429,7 @@ body.col-resizing { cursor: col-resize; user-select: none; }
 .modal h3 { margin: 0 0 var(--space-2-5); }
 .picker-modal { width: 640px; max-height: 85vh; overflow-y: auto; }
 .picker-mode-row { display: flex; gap: var(--space-1-5); margin-bottom: var(--space-3); }
-.picker-mode-row button { flex: 1; padding: var(--space-2); }
+.picker-mode-row button { flex: 0 0 auto; padding: var(--space-1-5) var(--space-4); }
 .picker-recent { margin-bottom: var(--space-2-5); }
 .picker-recent label { display: block; font-size: var(--text-xs); color: var(--dim); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: var(--space-1-5); }
 .picker-breadcrumb-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }

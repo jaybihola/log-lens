@@ -15,7 +15,7 @@ export function LineRow({
   pinned, onTogglePinned, flash,
   columns, onToggleColumn,
   tsWidth, badgeWidth, extraColumnWidth,
-  onSendToJsonLens, onApplyFilter, onContextMenu, menuActive,
+  onSendToJsonLens, onApplyFilter, stagedFilters, onToggleStagedFilter, onContextMenu, menuActive,
 }) {
   const lvlClass = levelClass(entry.text);
 
@@ -150,6 +150,8 @@ export function LineRow({
           columns={columns}
           onToggleColumn={onToggleColumn}
           onApplyFilter={onApplyFilter}
+          stagedFilters={stagedFilters}
+          onToggleStagedFilter={onToggleStagedFilter}
         />
       )}
     </div>

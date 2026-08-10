@@ -175,7 +175,7 @@ button.active {
 }
 button:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
 
-input[type="text"], input[type="password"], input[type="datetime-local"], select {
+input[type="text"], input[type="password"], input[type="datetime-local"], input[type="number"], select {
   background: var(--panel-sunken);
   color: var(--fg);
   border: 1px solid var(--border);
@@ -186,7 +186,7 @@ input[type="text"], input[type="password"], input[type="datetime-local"], select
   box-shadow: none;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
-input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, select:focus {
+input[type="text"]:focus, input[type="password"]:focus, input[type="datetime-local"]:focus, input[type="number"]:focus, select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);

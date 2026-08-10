@@ -1,4 +1,4 @@
-import { Plus, Check, Filter, FilterX } from 'lucide-react';
+import { Plus, Check, Filter, FilterX, Radio, RadioOff } from 'lucide-react';
 import { buildFieldRows } from '../render/fieldTable.js';
 import { CopyButton } from '../../shared/components/CopyButton.jsx';
 import { Tooltip } from '../../shared/components/Tooltip.jsx';
@@ -12,8 +12,16 @@ import { Tooltip } from '../../shared/components/Tooltip.jsx';
 // on the one row currently hovered just reads as dead space. `onApplyFilter`
 // is null-safe (nothing to filter with outside a real log tab's own JQL
 // box), same guard already used for `onSendToJsonLens` elsewhere in this
-// tree.
-export function FieldTable({ entry, pairedSeq, timeLabel, levelLabel, columns, onToggleColumn, onApplyFilter }) {
+// tree. `stagedFilters`/`onToggleStagedFilter` (also null-safe — only
+// offered on remote-query tabs, see LogViewerApp's handleToggleStagedFilter)
+// are the KQL-fetching counterpart of Filter for/out right next to them:
+// same field:value, same for/out pair, same per-row buttons — the
+// difference is Filter for/out applies immediately against the buffer
+// already loaded, while these *stage* the clause (button turns "active",
+// same convention as the Add-as-column toggle) so several fields, even from
+// different rows, can be combined before creating one new tab with all of
+// them ANDed onto its KQL (see the staged-filters bar in LogViewerApp).
+export function FieldTable({ entry, pairedSeq, timeLabel, levelLabel, columns, onToggleColumn, onApplyFilter, stagedFilters, onToggleStagedFilter }) {
   const rows = buildFieldRows(entry, { pairedSeq, timeLabel, levelLabel });
 
   return (
@@ -63,6 +71,38 @@ export function FieldTable({ entry, pairedSeq, timeLabel, levelLabel, columns, o
                         </Tooltip>
                       </>
                     )}
+                    {row.keyPath && onToggleStagedFilter && (() => {
+                      const stagedFor = stagedFilters?.some((f) => f.field === row.keyPath && f.value === row.value && !f.negate);
+                      const stagedOut = stagedFilters?.some((f) => f.field === row.keyPath && f.value === row.value && f.negate);
+                      return (
+                        <>
+                          <Tooltip
+                            label={stagedFor ? 'Remove from new-tab filter' : 'Stage for new-tab filter'}
+                            description={stagedFor ? `Un-stage ${row.label}:${row.value}.` : `Stage ${row.label}:${row.value} — combine with other staged fields, then create a new remote-query tab with them all.`}
+                          >
+                            <button
+                              type="button"
+                              className={stagedFor ? 'field-action-btn field-action-btn-remote active' : 'field-action-btn field-action-btn-remote'}
+                              onClick={(e) => { e.stopPropagation(); onToggleStagedFilter(row.keyPath, row.value, false); }}
+                            >
+                              <Radio size={13} strokeWidth={1.75} />
+                            </button>
+                          </Tooltip>
+                          <Tooltip
+                            label={stagedOut ? 'Remove from new-tab filter' : 'Stage exclusion for new-tab filter'}
+                            description={stagedOut ? `Un-stage -${row.label}:${row.value}.` : `Stage -${row.label}:${row.value} — combine with other staged fields, then create a new remote-query tab with them all.`}
+                          >
+                            <button
+                              type="button"
+                              className={stagedOut ? 'field-action-btn field-action-btn-remote field-action-btn-exclude active' : 'field-action-btn field-action-btn-remote field-action-btn-exclude'}
+                              onClick={(e) => { e.stopPropagation(); onToggleStagedFilter(row.keyPath, row.value, true); }}
+                            >
+                              <RadioOff size={13} strokeWidth={1.75} />
+                            </button>
+                          </Tooltip>
+                        </>
+                      );
+                    })()}
                     {row.keyPath && (
                       <Tooltip label={isColumn ? 'Remove column' : 'Add as column'} description={isColumn ? 'Stop showing this field as its own column.' : 'Show this field as its own column in the log list.'}>
                         <button

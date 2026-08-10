@@ -16,6 +16,7 @@ import { useTitleAttention } from './hooks/useTitleAttention.js';
 import { resolveJumpTarget } from './render/timestamp.js';
 import { TabBar } from './components/TabBar.jsx';
 import { TabPickerModal } from './components/TabPickerModal.jsx';
+import { RemoteQueryEditModal } from './components/RemoteQueryEditModal.jsx';
 import { PreferencesModal } from './components/preferences/PreferencesModal.jsx';
 import { HelpPanel } from './components/HelpPanel.jsx';
 import { TabGroupsMenu } from './components/TabGroupsMenu.jsx';
@@ -36,7 +37,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   const {
     tabMetaList, activeTabId, activeBuffer, activeUi, attentionCounts, getLastLineAt,
     openNewTab, openInTab, activateTab, closeTab, closeOtherTabs, closeTabsToRight, fetchTab, clearActiveTab, updateActiveTabUi,
-    toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, fetchActiveTab,
+    toggleExpanded, togglePinned, addColumn, removeColumn, toggleColumn, createRemoteTab, updateRemoteTab, fetchActiveTab,
   } = useTabs();
   const { fontSize, stepFontSize, histogramOpen, toggleHistogram, histogramIntervalMs, setHistogramInterval } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
@@ -53,8 +54,18 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   // per-tab badge half of this).
   useTitleAttention(useMemo(() => Object.values(attentionCounts).reduce((sum, n) => sum + n, 0), [attentionCounts]));
 
-  const [modal, setModal] = useState(null); // null | 'picker' | 'preferences'
+  const [modal, setModal] = useState(null); // null | 'picker' | 'preferences' | 'remote-edit'
   const [pickerMode, setPickerMode] = useState('file');
+  // Seeds RemoteQueryEditModal — { mode: 'create' | 'edit', initialConfig }.
+  // 'create' backs "Duplicate and modify" (a new tab); 'edit' backs "Edit…"
+  // (reconfigures the source tab in place via updateRemoteTab).
+  const [remoteEdit, setRemoteEdit] = useState(null);
+  // Field:value clauses staged from FieldTable's per-row "fetch new tab"
+  // buttons (see handleToggleStagedFilter) — accumulated across as many
+  // fields/rows as wanted (even across expanding/collapsing different rows)
+  // before actually creating the new tab, unlike Filter for/out right next
+  // to them which apply immediately. [{ field, value, negate }].
+  const [stagedFilters, setStagedFilters] = useState([]);
   const [fetching, setFetching] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
   const filterInputRef = useRef(null);
@@ -67,10 +78,16 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
 
   const activeTab = tabMetaList.find((t) => t.id === activeTabId) || null;
   const indexFields = useIndexFields(activeTab?.environment, activeTab?.queryConfig?.index, fieldsRefreshToken);
+  // Staged filters are scoped to whatever tab they were staged from (its
+  // fields, its request) — switching away makes them stale, so drop them
+  // rather than let them silently apply against a different tab's schema.
+  useEffect(() => {
+    setStagedFilters([]);
+  }, [activeTabId]);
   const exportLabel = activeTab
     ? (activeTab.kind === 'api' ? (activeTab.environment || 'remote-query') : basename(activeTab.file || 'log'))
     : 'log-lens';
-  const closeModal = () => setModal(null);
+  const closeModal = () => { setModal(null); setRemoteEdit(null); };
   const openPicker = (mode) => { setPickerMode(mode); setModal('picker'); };
 
   const handleFileOpen = async (path) => {
@@ -101,6 +118,22 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     else if (tab.file) await openInTab(tab.id, tab.file);
   };
 
+  // Tab bar context menu's three remote-query actions:
+  // "Duplicate" — no modal, just re-runs the exact same config as a new tab.
+  const handleDuplicateTab = (tab) => createRemoteTab(tab.environment, tab.queryConfig);
+  // "Duplicate and modify…" — same as above but via the modal, pre-filled,
+  // so it can be changed before creating the new tab.
+  const openDuplicateModify = (tab) => {
+    setRemoteEdit({ mode: 'create', initialConfig: { environment: tab.environment, ...tab.queryConfig } });
+    setModal('remote-edit');
+  };
+  // "Edit…" — same modal/pre-fill, but reconfigures this tab in place
+  // (updateRemoteTab) instead of creating a new one.
+  const openEditRemoteTab = (tab) => {
+    setRemoteEdit({ mode: 'edit', initialConfig: { tabId: tab.id, environment: tab.environment, ...tab.queryConfig } });
+    setModal('remote-edit');
+  };
+
   const handleFetch = async () => {
     setFetching(true);
     try {
@@ -127,6 +160,53 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     const current = activeUi.filterQuery.trim();
     updateActiveTabUi({ filterQuery: current ? `${current} ${token}` : token });
     filterInputRef.current?.focus();
+  };
+
+  // FieldTable's "Fetch new tab: for/excluding this value" pair — the
+  // KQL-fetch counterparts of handleApplyFieldFilter's Filter for/out right
+  // next to them (same signature: field, value, negate). Unlike those,
+  // which apply immediately, these *stage* the clause (toggle it into/out
+  // of stagedFilters) so several fields — even from different rows, expanded
+  // one at a time — can be combined before actually creating anything.
+  const handleToggleStagedFilter = (field, value, negate = false) => {
+    setStagedFilters((prev) => {
+      const idx = prev.findIndex((f) => f.field === field && f.value === value && f.negate === negate);
+      if (idx !== -1) return prev.filter((_, i) => i !== idx);
+      return [...prev, { field, value, negate }];
+    });
+  };
+  const removeStagedFilter = (index) => setStagedFilters((prev) => prev.filter((_, i) => i !== index));
+  const clearStagedFilters = () => setStagedFilters([]);
+
+  // The staged-filters bar's "Create new tab" — clones the active
+  // remote-query tab's exact request (environment, index, time range, fold
+  // values, raw body override) into a *new* tab with every staged
+  // field:value clause ANDed onto its existing KQL, then opens the picker
+  // modal pre-filled so it can be reviewed/adjusted before creating the new
+  // tab — same "clone the request, tweak the filter" idea as "Duplicate and
+  // modify…", just seeded from staged log-entry field values instead of the
+  // source tab's filter as-is. Only reachable when the active tab is
+  // kind === 'api' (the bar itself is gated on that — see its render below)
+  // — a file tab has no "request" to clone.
+  const handleCreateStagedTab = () => {
+    if (!activeTab || activeTab.kind !== 'api' || !stagedFilters.length) return;
+    const quote = (v) => (/[\s"()]/.test(v) || v === '' ? `"${v}"` : v);
+    const clauses = stagedFilters.map(({ field, value, negate }) => `${negate ? '-' : ''}${field}:${quote(value)}`).join(' ');
+    const existingKql = (activeTab.queryConfig?.kql || '').trim();
+    setRemoteEdit({
+      mode: 'create',
+      initialConfig: {
+        environment: activeTab.environment,
+        ...activeTab.queryConfig,
+        kql: [existingKql, clauses].filter(Boolean).join(' '),
+        // A raw-body override, if the source tab had one, wins over kql at
+        // query time — carrying it over here would silently make the staged
+        // filters a no-op, defeating the whole point of this action.
+        rawBody: null,
+      },
+    });
+    setModal('remote-edit');
+    setStagedFilters([]);
   };
 
   // ⌘K command bar — every command here is a thin wrapper around a handler
@@ -229,6 +309,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
       if (e.key === 'Escape' && modal) {
         e.preventDefault();
         setModal(null);
+        setRemoteEdit(null);
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && activeTab) {
@@ -269,6 +350,9 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
           onClose={closeTab}
           onAdd={() => setModal('picker')}
           onReload={handleReloadTab}
+          onDuplicate={handleDuplicateTab}
+          onDuplicateModify={openDuplicateModify}
+          onEdit={openEditRemoteTab}
           onCloseOthers={closeOtherTabs}
           onCloseToRight={closeTabsToRight}
           attentionCounts={attentionCounts}
@@ -380,6 +464,21 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
             {activeTab.kind === 'api' && activeTab.fetchError && (
               <div className="api-error">{activeTab.fetchError}</div>
             )}
+            {activeTab.kind === 'api' && stagedFilters.length > 0 && (
+              <div className="staged-filters-bar">
+                <span className="staged-filters-label">New tab filter</span>
+                <div className="preset-list">
+                  {stagedFilters.map((f, i) => (
+                    <div className="preset-chip" key={`${f.field}:${f.value}:${f.negate}`}>
+                      <span className="preset-name">{f.negate ? '-' : ''}{f.field}:{f.value}</span>
+                      <button type="button" onClick={() => removeStagedFilter(i)}>×</button>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={handleCreateStagedTab}>Create new tab</button>
+                <button type="button" onClick={clearStagedFilters}>Clear</button>
+              </div>
+            )}
             {histogramOpen && (
               <TimeHistogram
                 buffer={activeBuffer}
@@ -409,6 +508,8 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               onCloseFind={() => setFindOpen(false)}
               onSendToJsonLens={onSendToJsonLens}
               onApplyFilter={handleApplyFieldFilter}
+              stagedFilters={activeTab.kind === 'api' ? stagedFilters : null}
+              onToggleStagedFilter={activeTab.kind === 'api' ? handleToggleStagedFilter : null}
             />
           </div>
         </div>
@@ -445,6 +546,15 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
       )}
       {modal === 'preferences' && (
         <PreferencesModal onClose={closeModal} theme={theme} onSetTheme={setTheme} />
+      )}
+      {modal === 'remote-edit' && remoteEdit && (
+        <RemoteQueryEditModal
+          mode={remoteEdit.mode}
+          initialConfig={remoteEdit.initialConfig}
+          onCreate={createRemoteTab}
+          onSave={updateRemoteTab}
+          onClose={closeModal}
+        />
       )}
       <CommandBar open={commandBarOpen} onClose={() => setCommandBarOpen(false)} commands={commands} />
     </div>

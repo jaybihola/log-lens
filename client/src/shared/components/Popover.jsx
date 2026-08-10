@@ -52,7 +52,13 @@ export function Popover({ trigger, children, align = 'left', panelClassName = ''
     const onKeyDown = (e) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    const onScroll = () => setOpen(false);
+    // Scrolling something *inside* the panel (e.g. a long preset list)
+    // shouldn't close it — only a scroll elsewhere, which would leave the
+    // panel's measured position stale.
+    const onScroll = (e) => {
+      if (panelRef.current && panelRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
     const onResize = () => setOpen(false);
     document.addEventListener('mousedown', onDocMouseDown);
     document.addEventListener('keydown', onKeyDown);

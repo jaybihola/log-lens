@@ -5,7 +5,7 @@ import { CodeViewer } from './CodeViewer.jsx';
 // Kibana-style "expanded document": a flattened field->value table (default)
 // plus a raw/pretty JSON tab, shown inline below a row when its "Show more"
 // button is toggled.
-export function ExpandedDoc({ entry, pairedSeq, timeLabel, levelLabel, columns, onToggleColumn, onApplyFilter }) {
+export function ExpandedDoc({ entry, pairedSeq, timeLabel, levelLabel, columns, onToggleColumn, onApplyFilter, stagedFilters, onToggleStagedFilter }) {
   const [activeTab, setActiveTab] = useState('table');
 
   return (
@@ -38,6 +38,8 @@ export function ExpandedDoc({ entry, pairedSeq, timeLabel, levelLabel, columns, 
             columns={columns}
             onToggleColumn={onToggleColumn}
             onApplyFilter={onApplyFilter}
+            stagedFilters={stagedFilters}
+            onToggleStagedFilter={onToggleStagedFilter}
           />
         ) : (
           <CodeViewer rawText={entry.text} />

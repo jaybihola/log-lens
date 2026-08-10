@@ -183,6 +183,29 @@ export function useTabs() {
     return tab;
   }, [ensureEntry, setActiveTab]);
 
+  // "Edit" on an existing remote-query tab: persists the new environment/
+  // queryConfig onto the *same* tab (server-side via configureApiTab, same
+  // route the picker's "duplicate and modify" flow would use to create a
+  // fresh one — /api/tabs/:id/query) rather than creating a new tab, then
+  // re-fetches. The server resets that tab's seq counter on reconfigure
+  // (a changed query is a different result set, not a continuation — see
+  // configureApiTab's own comment), so the client buffer has to be dropped
+  // too, same reasoning as handleBootChanged/openInTab: a stale buffer would
+  // make the seq<=last.seq dedup guard swallow every line of the new result.
+  const updateRemoteTab = useCallback(async (tabId, environment, queryConfig) => {
+    const tab = await api.queryTab(tabId, environment, queryConfig);
+    const entry = ensureEntry(tabId);
+    entry.buffer = [];
+    historyLoadedRef.current.delete(tabId);
+    setTabMetaList((prev) => prev.map((t) => (t.id === tabId ? tab : t)));
+    try {
+      await api.fetchTab(tabId);
+    } finally {
+      setActiveTab(tabId);
+    }
+    return tab;
+  }, [ensureEntry, setActiveTab]);
+
   const fetchActiveTab = useCallback(async () => {
     const id = activeTabIdRef.current;
     if (!id) return;
@@ -342,6 +365,7 @@ export function useTabs() {
     removeColumn,
     toggleColumn,
     createRemoteTab,
+    updateRemoteTab,
     fetchActiveTab,
   };
 }

@@ -15,7 +15,7 @@ export const EntryView = forwardRef(function EntryView({
   toggleExpanded, togglePinned, onChangeUi,
   extraColumns, onToggleColumn, onRemoveColumn,
   tsWidth, badgeWidth, extraColumnWidth, onResizeColumn,
-  findOpen, onCloseFind, onSendToJsonLens, onApplyFilter,
+  findOpen, onCloseFind, onSendToJsonLens, onApplyFilter, stagedFilters, onToggleStagedFilter,
 }, ref) {
   const { filterQuery, caseSensitive, autoscroll, paused, wrap, expandedSeqs, pinnedSeqs, timeRange } = ui;
   const scrollRef = useRef(null);
@@ -236,6 +236,8 @@ export const EntryView = forwardRef(function EntryView({
                     extraColumnWidth={extraColumnWidth}
                     onSendToJsonLens={onSendToJsonLens}
                     onApplyFilter={onApplyFilter}
+                    stagedFilters={stagedFilters}
+                    onToggleStagedFilter={onToggleStagedFilter}
                     onContextMenu={handleLineContextMenu}
                     menuActive={isMenuActive(entry.seq)}
                   />
