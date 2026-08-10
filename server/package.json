@@ -9,15 +9,18 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "mock:writer": "node mocks/mock-log-writer.js",
-    "mock:es": "node mocks/mock-es-server.js"
+    "mock:es": "node mocks/mock-es-server.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "fastify": "^5.1.0",
     "@fastify/cors": "^10.0.1",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "fastify": "^5.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=18.11"

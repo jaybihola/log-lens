@@ -199,12 +199,20 @@ export function useDiffTabs() {
     setState((prev) => {
       const existing = prev.tabs.find((t) => t.origin === 'scratch' && t.scratchId === scratchId);
       if (existing) return { ...prev, activeId: existing.id };
-      const snapshot = { leftText: data.leftText, rightText: data.rightText, language: data.language, options: { ...data.options } };
+      // Merge with DEFAULT_OPTIONS *before* snapshotting — a scratch saved
+      // before a newer ignore-option existed would otherwise have fewer
+      // keys than the live tab.options it's compared against, making
+      // isTabDirty() see a difference that isn't really there and mark a
+      // freshly-reopened, untouched scratch as dirty.
+      const snapshot = {
+        leftText: data.leftText, rightText: data.rightText, language: data.language,
+        options: { ...DEFAULT_OPTIONS, ...data.options },
+      };
       const tab = {
         ...makeTab(prev.tabs.length + 1),
         name,
         ...snapshot,
-        options: { ...DEFAULT_OPTIONS, ...snapshot.options },
+        options: { ...snapshot.options },
         origin: 'scratch',
         scratchId,
         savedSnapshot: snapshot,
