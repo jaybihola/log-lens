@@ -327,12 +327,20 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
 .find-bar {
   position: absolute; top: 8px; right: 8px; z-index: 40;
   display: flex; align-items: center; gap: var(--space-1-5);
-  background: var(--panel-2); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  box-shadow: var(--shadow); padding: var(--space-1-5) var(--space-2);
+  background: var(--panel-3); border: 1.5px solid var(--accent); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow), 0 0 0 3px rgba(var(--accent-rgb), 0.18); padding: var(--space-1-5) var(--space-2-5);
 }
 .find-bar-input { width: 280px; font-family: monospace; }
 .find-bar-count { min-width: 44px; text-align: center; color: var(--dim); font-size: var(--text-xs); font-family: monospace; }
 .find-bar button { width: 24px; height: 24px; padding: 0; line-height: 1; }
+/* Scoped to one expanded entry (see FindBar.jsx) — the label needs its own
+   accent treatment since it's the only thing distinguishing this from a
+   normal whole-view find at a glance. */
+.find-bar-scope-label {
+  font-size: var(--text-xs); font-weight: 600; white-space: nowrap;
+  color: var(--accent-fg); background: var(--accent); border-radius: var(--radius-sm);
+  padding: 2px var(--space-1-5); margin-right: var(--space-1);
+}
 .find-hit { background: rgba(var(--warn-rgb), 0.45); border-radius: 2px; }
 .line.find-current { background: var(--flash) !important; }
 

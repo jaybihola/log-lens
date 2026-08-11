@@ -15,7 +15,7 @@ export const EntryView = forwardRef(function EntryView({
   toggleExpanded, togglePinned, onChangeUi,
   extraColumns, onToggleColumn, onRemoveColumn,
   tsWidth, badgeWidth, extraColumnWidth, onResizeColumn,
-  findOpen, onCloseFind, onSendToJsonLens, onApplyFilter, stagedFilters, onToggleStagedFilter,
+  findOpen, findScopeSeq, onCloseFind, onSendToJsonLens, onApplyFilter, stagedFilters, onToggleStagedFilter,
 }, ref) {
   const { filterQuery, caseSensitive, autoscroll, paused, wrap, expandedSeqs, pinnedSeqs, timeRange } = ui;
   const scrollRef = useRef(null);
@@ -83,9 +83,15 @@ export const EntryView = forwardRef(function EntryView({
 
   const findCompiled = useMemo(() => compileQuery(findQuery, { caseSensitive: findCaseSensitive }), [findQuery, findCaseSensitive]);
   const findActive = findOpen && findQuery.trim().length > 0;
+  // Scoped to one entry (see LogViewerApp's ⌘F-inside-an-expanded-entry
+  // handling) restricts the search pool to just that entry instead of every
+  // currently visible line — same matcher, narrower pool.
+  const findPool = useMemo(() => (
+    findScopeSeq != null ? visible.filter((v) => v.entry.seq === findScopeSeq) : visible
+  ), [visible, findScopeSeq]);
   const findMatchSeqs = useMemo(() => (
-    findActive ? visible.filter((v) => findCompiled.matcher(v.entry.text)).map((v) => v.entry.seq) : []
-  ), [visible, findCompiled, findActive]);
+    findActive ? findPool.filter((v) => findCompiled.matcher(v.entry.text)).map((v) => v.entry.seq) : []
+  ), [findPool, findCompiled, findActive]);
   // Unlike `flash` (a one-second pulse shared with jump-to-line), this stays
   // on the current match for as long as it *is* current — the persistent
   // "you are here" indicator the flash alone doesn't give you while
@@ -191,6 +197,7 @@ export const EntryView = forwardRef(function EntryView({
         {findOpen && (
           <FindBar
             query={findQuery}
+            scopeSeq={findScopeSeq}
             onQueryChange={setFindQuery}
             caseSensitive={findCaseSensitive}
             onToggleCaseSensitive={() => setFindCaseSensitive((v) => !v)}

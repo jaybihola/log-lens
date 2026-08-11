@@ -27,6 +27,7 @@ import { TimeHistogram } from './components/TimeHistogram.jsx';
 import { EntryView } from './components/EntryView.jsx';
 import { FieldsSidebar } from './components/FieldsSidebar.jsx';
 import { EmptyState } from '../shared/components/EmptyState.jsx';
+import { hasTopLevelOr } from './filter/simpleJql.js';
 
 function basename(p) {
   const parts = p.split(/[/\\]/);
@@ -68,6 +69,12 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   const [stagedFilters, setStagedFilters] = useState([]);
   const [fetching, setFetching] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
+  // Which single log entry (by seq) find is scoped to, or null for the
+  // normal whole-view find — set when ⌘F/Ctrl+F fires while focus is inside
+  // an expanded entry's own content (its field table/JSON view), so hitting
+  // find while reading one entry doesn't step through unrelated matches
+  // elsewhere in the buffer. Reset whenever find is (re)opened any other way.
+  const [findScopeSeq, setFindScopeSeq] = useState(null);
   const filterInputRef = useRef(null);
   const entryViewRef = useRef(null);
   // Bumped after every query run so useIndexFields re-reads the accumulated
@@ -154,11 +161,18 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   // a `field:value` JQL token to whatever's already in the filter box
   // (quoting the value if it has whitespace/parens/quotes the tokenizer
   // would otherwise choke on) rather than clobbering an in-progress query.
+  // ANDed against the *whole* existing query, not just whatever's
+  // immediately to its left: if the query already has a top-level OR (e.g.
+  // two groups from the visual filter builder), a bare trailing token would
+  // otherwise only bind to the last OR branch (AND binds tighter than OR),
+  // silently letting the new filter skip every other branch — wrapping the
+  // existing query in parens first keeps the new token required everywhere.
   const handleApplyFieldFilter = (field, value, negate = false) => {
     const needsQuotes = /[\s"()]/.test(value) || value === '';
     const token = `${negate ? '-' : ''}${field}:${needsQuotes ? `"${value}"` : value}`;
     const current = activeUi.filterQuery.trim();
-    updateActiveTabUi({ filterQuery: current ? `${current} ${token}` : token });
+    const base = hasTopLevelOr(current) ? `(${current})` : current;
+    updateActiveTabUi({ filterQuery: base ? `${base} ${token}` : token });
     filterInputRef.current?.focus();
   };
 
@@ -314,6 +328,8 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f' && activeTab) {
         e.preventDefault();
+        const expandedEntry = document.activeElement?.closest?.('.expanded-doc');
+        setFindScopeSeq(expandedEntry ? Number(expandedEntry.dataset.seq) : null);
         setFindOpen(true);
         return;
       }
@@ -456,7 +472,7 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               filterInputRef={filterInputRef}
               filterMode={filterMode}
               onToggleFilterMode={toggleFilterMode}
-              onOpenFind={() => setFindOpen(true)}
+              onOpenFind={() => { setFindScopeSeq(null); setFindOpen(true); }}
               histogramOpen={histogramOpen}
               onToggleHistogram={toggleHistogram}
               tabLabel={exportLabel}
@@ -505,7 +521,8 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
               extraColumnWidth={extraColumnWidth}
               onResizeColumn={setColumnWidth}
               findOpen={findOpen}
-              onCloseFind={() => setFindOpen(false)}
+              findScopeSeq={findScopeSeq}
+              onCloseFind={() => { setFindOpen(false); setFindScopeSeq(null); }}
               onSendToJsonLens={onSendToJsonLens}
               onApplyFilter={handleApplyFieldFilter}
               stagedFilters={activeTab.kind === 'api' ? stagedFilters : null}

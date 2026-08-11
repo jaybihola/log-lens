@@ -7,19 +7,25 @@ import { Tooltip } from '../../shared/components/Tooltip.jsx';
 // them. Fully controlled — all the matching/navigation state lives in
 // EntryView, which is the only place that already has the filtered line
 // list and the virtualizer needed to scroll to a match.
-export function FindBar({ query, onQueryChange, caseSensitive, onToggleCaseSensitive, matchCount, currentIndex, onNext, onPrev, onClose }) {
+//
+// `scopeSeq` (set by LogViewerApp when ⌘F/Ctrl+F fires with focus inside an
+// expanded entry's own content) narrows the search pool to just that one
+// entry instead of the whole view — the label makes the narrower scope
+// visible rather than leaving a "why did only one line match?" mystery.
+export function FindBar({ query, scopeSeq, onQueryChange, caseSensitive, onToggleCaseSensitive, matchCount, currentIndex, onNext, onPrev, onClose }) {
   const inputRef = useRef(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
   return (
-    <div className="find-bar">
+    <div className={scopeSeq != null ? 'find-bar find-bar-scoped' : 'find-bar'}>
+      {scopeSeq != null && <span className="find-bar-scope-label">Search in Log entry #{scopeSeq}</span>}
       <input
         ref={inputRef}
         type="text"
         className="find-bar-input"
         value={query}
-        placeholder="Find in view — JQL (Enter for next, Shift+Enter for previous)"
+        placeholder={scopeSeq != null ? 'JQL — Enter for next, Shift+Enter for previous' : 'Find in view — JQL (Enter for next, Shift+Enter for previous)'}
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) onPrev(); else onNext(); }

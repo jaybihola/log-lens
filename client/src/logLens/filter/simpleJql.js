@@ -174,6 +174,22 @@ export function buildSimpleMatcher(query, caseSensitive) {
   return (line) => evalSimpleAst(ast, line, caseSensitive);
 }
 
+// Whether `query` has a top-level (paren-depth 0) OR — i.e. whether AND-ing
+// one more bare token onto its end would only bind to the last OR branch
+// instead of gating the whole expression (AND binds tighter than OR, and a
+// trailing bare atom associates with whatever immediately precedes it — see
+// parseAnd in parseSimpleAst). A caller appending a new clause needs this to
+// know whether the existing query first needs wrapping in parens.
+export function hasTopLevelOr(query) {
+  let depth = 0;
+  for (const t of tokenize(query || '')) {
+    if (t.kind === 'paren' && t.value === '(') depth += 1;
+    else if (t.kind === 'paren' && t.value === ')') depth -= 1;
+    else if (t.kind === 'op' && t.op === 'OR' && depth === 0) return true;
+  }
+  return false;
+}
+
 export function highlightTermsForSimple(query) {
   const out = [];
   const isHighlightable = (v) => v && v !== '*' && v !== 'null';

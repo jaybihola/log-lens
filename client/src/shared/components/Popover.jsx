@@ -47,7 +47,14 @@ export function Popover({ trigger, children, align = 'left', panelClassName = ''
   useEffect(() => {
     if (!open) return undefined;
     const onDocMouseDown = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (wrapRef.current && wrapRef.current.contains(e.target)) return;
+      // Dropdown (and any other portal-to-<body> control nested inside this
+      // popover's content) renders its own panel outside wrapRef's subtree —
+      // without this, clicking one of its options reads as an "outside"
+      // click and closes this popover first, unmounting the dropdown before
+      // its own onClick can commit the selection.
+      if (e.target.closest?.('.dropdown-panel')) return;
+      setOpen(false);
     };
     const onKeyDown = (e) => {
       if (e.key === 'Escape') setOpen(false);

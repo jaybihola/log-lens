@@ -287,13 +287,21 @@ export function useTabs() {
     // don't touch the server's ring buffer here.
   }, [ensureEntry, scheduleRender]);
 
+  // Renders immediately rather than through the rAF-coalesced scheduleRender
+  // (unlike handleLine's buffer appends, this isn't a high-frequency path,
+  // and batching it is actively harmful for the filter box: FilterInput's
+  // own local caret state re-renders synchronously on every keystroke, so a
+  // deferred update here would momentarily hand it back the *stale* value,
+  // get overwritten into the DOM, then get reasserted a frame later — and
+  // that second `.value` write is what resets the caret to the end of the
+  // input on every character typed.
   const updateActiveTabUi = useCallback((patch) => {
     const id = activeTabIdRef.current;
     if (!id) return;
     const entry = ensureEntry(id);
     entry.ui = { ...entry.ui, ...patch };
-    scheduleRender();
-  }, [ensureEntry, scheduleRender]);
+    setRenderTick((t) => t + 1);
+  }, [ensureEntry]);
 
   const toggleExpanded = useCallback((seq) => {
     const id = activeTabIdRef.current;

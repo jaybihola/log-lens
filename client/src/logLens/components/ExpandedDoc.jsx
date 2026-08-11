@@ -9,7 +9,7 @@ export function ExpandedDoc({ entry, pairedSeq, timeLabel, levelLabel, columns, 
   const [activeTab, setActiveTab] = useState('table');
 
   return (
-    <div className="expanded-doc" onClick={(e) => e.stopPropagation()}>
+    <div className="expanded-doc" data-seq={entry.seq} onClick={(e) => e.stopPropagation()}>
       <div className="expanded-doc-tabs">
         <div className="expanded-doc-tab-group">
           <button
