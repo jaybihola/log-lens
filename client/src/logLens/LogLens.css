@@ -483,6 +483,10 @@ body.col-resizing .col-resize-handle::after { background: var(--accent); }
    cards), so it reads as this row's own content continuing downward
    instead of a separate box dropped into the list. */
 .expanded-doc { background: var(--panel-sunken); border-top: 1px solid var(--border); cursor: default; }
+/* Focusable (see ExpandedDoc.jsx) purely so a click anywhere inside it
+   registers for ⌘F's find-scoping — not meant to read as a focused control,
+   so no visible ring. */
+.expanded-doc:focus { outline: none; }
 .expanded-doc-tabs { display: flex; align-items: center; padding: var(--space-2) var(--space-4-5) 0; }
 /* A real segmented-control container (same recipe as .json-mode-toggle in
    JsonLens.css) instead of two pills floating loose on the same background
