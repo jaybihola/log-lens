@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Clock, FolderTree, FoldVertical, List, Pin, UnfoldVertical, X } from 'lucide-react';
+import { ChevronRight, Clock, FolderTree, FoldVertical, List, Pin, Rocket, UnfoldVertical, X } from 'lucide-react';
 import { FieldTree, TreeGuides } from '../../shared/components/FieldTree.jsx';
 import { buildFieldTree, collectFolderPaths, treeIndent } from '../../shared/render/fieldTree.js';
 
@@ -17,7 +17,7 @@ function describeConfig(cfg) {
 // filter (FilterInput's own autocomplete convention); clicking a pinned/
 // recent row applies that whole query config.
 export function RemoteQueryFieldBrowser({
-  fields, onInsertField, saved, recent, onApplyPreset, onRemoveSaved, onRemoveRecent,
+  fields, onInsertField, saved, recent, onApplyPreset, onRemoveSaved, onRemoveRecent, onLaunchPreset,
 }) {
   const [search, setSearch] = useState('');
   const [expandedPaths, setExpandedPaths] = useState(() => new Set());
@@ -85,6 +85,7 @@ export function RemoteQueryFieldBrowser({
                     title={p.name}
                     description={describeConfig(p)}
                     onApply={() => onApplyPreset(p)}
+                    onLaunch={onLaunchPreset ? () => onLaunchPreset(p) : null}
                     onRemove={() => onRemoveSaved(p.name)}
                   />
                 ))}
@@ -100,6 +101,7 @@ export function RemoteQueryFieldBrowser({
                     icon={<Clock size={11} strokeWidth={1.75} className="pinned-row-pin" />}
                     title={describeConfig(cfg)}
                     onApply={() => onApplyPreset(cfg)}
+                    onLaunch={onLaunchPreset ? () => onLaunchPreset(cfg) : null}
                     onRemove={() => onRemoveRecent(i)}
                   />
                 ))}
@@ -153,10 +155,13 @@ function FieldRow({ field, segment, depth, onClick }) {
   );
 }
 
-// Same shape as FieldsSidebar's own PinnedRow — a div (hosts a nested Unpin
-// button, which a <button> can't) with click-to-apply and a hover-revealed
-// remove control.
-function PresetRow({ icon, title, description, onApply, onRemove }) {
+// Same shape as FieldsSidebar's own PinnedRow — a div (hosts nested action
+// buttons, which a <button> can't) with click-to-apply (repopulate the form
+// so it can be reviewed/tweaked before creating anything) and hover-revealed
+// launch/remove controls. `onLaunch`, when given, skips the form entirely —
+// same query config, straight into a new tab — for whenever you already
+// know you just want it running.
+function PresetRow({ icon, title, description, onApply, onLaunch, onRemove }) {
   return (
     <div
       className="fields-sidebar-row pinned-row"
@@ -168,6 +173,11 @@ function PresetRow({ icon, title, description, onApply, onRemove }) {
     >
       {icon}
       <span className="fields-sidebar-row-name">{title}</span>
+      {onLaunch && (
+        <button type="button" className="pinned-row-unpin pinned-row-launch" title="Launch as new tab" onClick={(e) => { e.stopPropagation(); onLaunch(); }}>
+          <Rocket size={11} strokeWidth={2} />
+        </button>
+      )}
       <button type="button" className="pinned-row-unpin" title="Remove" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
         <X size={11} strokeWidth={2} />
       </button>

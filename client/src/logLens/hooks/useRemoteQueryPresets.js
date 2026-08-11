@@ -62,3 +62,26 @@ export function useRemoteQueryPresets() {
 
   return { saved, recent, saveQuery, removeSaved, pushRecent, removeRecent };
 }
+
+// Turns a saved/recent preset ({ environment, index, kql, foldValues,
+// rangeMinutes }) into the queryConfig shape createRemoteTab actually wants
+// ({ index, dateFrom, dateTo, kql, foldValues }) — rangeMinutes, if any, is
+// resolved relative to "now" rather than replaying a stale absolute
+// timestamp (same as RemoteQueryBody's own applyQuickRange), and empty
+// fold-value arrays are dropped (same as its currentQueryConfig). Lets a
+// preset be launched straight into a new tab from outside the form itself —
+// the command bar and the sidebar's quick-launch button both use this.
+export function resolvePresetConfig(preset) {
+  const now = Date.now();
+  const foldValues = {};
+  for (const [key, values] of Object.entries(preset.foldValues || {})) {
+    if (values.length) foldValues[key] = values;
+  }
+  return {
+    index: preset.index,
+    dateFrom: preset.rangeMinutes ? new Date(now - preset.rangeMinutes * 60 * 1000).toISOString() : null,
+    dateTo: preset.rangeMinutes ? new Date(now).toISOString() : null,
+    kql: preset.kql || '',
+    foldValues,
+  };
+}

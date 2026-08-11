@@ -12,7 +12,6 @@ import { RemoteQueryFieldBrowser } from './RemoteQueryFieldBrowser.jsx';
 import { RemoteQueryPinForm } from './RemoteQueryPinForm.jsx';
 import { RemoteQueryTimeRangeMenu } from './RemoteQueryTimeRangeMenu.jsx';
 import { useIndexFields } from '../hooks/useIndexFields.js';
-import { useRemoteQueryPresets } from '../hooks/useRemoteQueryPresets.js';
 import { useTimeRangeUsage } from '../hooks/useTimeRangeUsage.js';
 import { buildSimpleMatcher } from '../filter/simpleJql.js';
 import { shortMinutesLabel } from '../filter/timeRanges.js';
@@ -48,6 +47,11 @@ function toDatetimeLocal(date) {
 export function RemoteQueryBody({
   onCreate, onSave, onClose, initialConfig = null, mode = 'create',
   activeTab: controlledActiveTab, onActiveTabChange,
+  // Pinned/recent remote-query presets — lifted up to LogViewerApp (same
+  // precedent as usePresets/the JQL presets) rather than owned here, so a
+  // query pinned mid-session shows up immediately in the command bar and the
+  // sidebar's quick-launch button without needing this modal to reopen.
+  saved, recent, saveQuery, removeSaved, pushRecent, removeRecent, onLaunchPreset,
 }) {
   const [environments, setEnvironments] = useState([]);
   const [environment, setEnvironment] = useState('');
@@ -69,7 +73,6 @@ export function RemoteQueryBody({
   const setActiveTab = tabsControlledExternally ? onActiveTabChange : setInternalActiveTab;
 
   const filterInputRef = useRef(null);
-  const { saved, recent, saveQuery, removeSaved, pushRecent, removeRecent } = useRemoteQueryPresets();
   const { topRanges, recordUse } = useTimeRangeUsage();
 
   // "Raw request" editor: mirrors the exact body a fetch would send, built
@@ -275,6 +278,7 @@ export function RemoteQueryBody({
             onApplyPreset={applyPreset}
             onRemoveSaved={removeSaved}
             onRemoveRecent={removeRecent}
+            onLaunchPreset={onLaunchPreset}
           />
         )}
 

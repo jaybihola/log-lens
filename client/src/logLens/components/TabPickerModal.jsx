@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { FilePickerBody } from '../../shared/components/FilePickerBody.jsx';
 import { RemoteQueryBody } from './RemoteQueryBody.jsx';
 
-export function TabPickerModal({ onOpenFile, onOpenFiles, onCreateRemote, onClose, recentFiles, onRemoveRecent, initialMode = 'file' }) {
+export function TabPickerModal({
+  onOpenFile, onOpenFiles, onCreateRemote, onClose, recentFiles, onRemoveRecent, initialMode = 'file',
+  saved, recent, saveQuery, removeSaved, pushRecent, removeRecent, onLaunchPreset,
+}) {
   const [mode, setMode] = useState(initialMode); // 'file' | 'api'
   // Owned here (not inside RemoteQueryBody) so it can render inline with
   // the Local file/Remote query row below instead of on a row of its own —
@@ -42,6 +45,13 @@ export function TabPickerModal({ onOpenFile, onOpenFiles, onCreateRemote, onClos
               onClose={onClose}
               activeTab={formTab}
               onActiveTabChange={setFormTab}
+              saved={saved}
+              recent={recent}
+              saveQuery={saveQuery}
+              removeSaved={removeSaved}
+              pushRecent={pushRecent}
+              removeRecent={removeRecent}
+              onLaunchPreset={onLaunchPreset}
             />
           )}
       </div>

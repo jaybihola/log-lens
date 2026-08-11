@@ -5,6 +5,7 @@ import { useCommandBar } from '../shared/hooks/useCommandBar.js';
 import { useTabs } from './hooks/useTabs.js';
 import { useDisplaySettings } from './hooks/useDisplaySettings.js';
 import { usePresets } from './hooks/usePresets.js';
+import { useRemoteQueryPresets, resolvePresetConfig } from './hooks/useRemoteQueryPresets.js';
 import { useRecentFiles } from './hooks/useRecentFiles.js';
 import { useTabGroups } from './hooks/useTabGroups.js';
 import { useColumnWidths } from './hooks/useColumnWidths.js';
@@ -42,6 +43,14 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   } = useTabs();
   const { fontSize, stepFontSize, histogramOpen, toggleHistogram, histogramIntervalMs, setHistogramInterval } = useDisplaySettings();
   const { presets, savePreset, removePreset } = usePresets();
+  // Lifted up here (not owned inside RemoteQueryBody) so a query pinned
+  // mid-session is immediately visible to the command bar and the sidebar's
+  // quick-launch button, not just to whichever RemoteQueryBody instance
+  // happened to save it — same reasoning as lifting usePresets above.
+  const {
+    saved: savedQueries, recent: recentQueries, saveQuery: saveQueryPreset,
+    removeSaved: removeSavedQuery, pushRecent: pushRecentQuery, removeRecent: removeRecentQuery,
+  } = useRemoteQueryPresets();
   const { recentFiles, addRecent, removeRecent } = useRecentFiles();
   const { groups, saveGroup, renameGroup, removeGroup } = useTabGroups();
   const { tsWidth, badgeWidth, extraColumnWidth, setColumnWidth } = useColumnWidths();
@@ -128,6 +137,14 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
   // Tab bar context menu's three remote-query actions:
   // "Duplicate" — no modal, just re-runs the exact same config as a new tab.
   const handleDuplicateTab = (tab) => createRemoteTab(tab.environment, tab.queryConfig);
+  // Same one-click shortcut as the line above, just sourced from a saved/
+  // recent remote-query preset instead of an existing tab — the command
+  // bar's "Launch query" entries and the sidebar's quick-launch button
+  // (RemoteQueryFieldBrowser) both land here.
+  const launchPreset = (preset) => {
+    createRemoteTab(preset.environment, resolvePresetConfig(preset));
+    pushRecentQuery({ environment: preset.environment, index: preset.index, kql: preset.kql, foldValues: preset.foldValues, rangeMinutes: preset.rangeMinutes });
+  };
   // "Duplicate and modify…" — same as above but via the modal, pre-filled,
   // so it can be changed before creating the new tab.
   const openDuplicateModify = (tab) => {
@@ -276,6 +293,20 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
         list.push({ id: `preset-${p.name}`, label: `Apply preset: ${p.name}`, group: 'Presets', keywords: p.query, onRun: () => updateActiveTabUi({ filterQuery: p.query }) });
       });
     }
+    // Pinned remote queries launch straight into a new tab — unlike the JQL
+    // presets above, not gated on activeTab: the whole point is running one
+    // without having to open a tab (or the picker modal) first.
+    if (savedQueries.length) {
+      savedQueries.forEach((p) => {
+        list.push({
+          id: `launch-query-${p.name}`,
+          label: `Launch query: ${p.name} (new tab)`,
+          group: 'Presets',
+          keywords: `${p.environment} ${p.index} ${p.kql || ''}`,
+          onRun: () => launchPreset(p),
+        });
+      });
+    }
     if (groups.length) {
       groups.forEach((g) => {
         list.push({ id: `group-${g.name}`, label: `Open tab group: ${g.name}`, group: 'Tab groups', onRun: () => handleFilesOpen(g.paths) });
@@ -284,8 +315,8 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
     return list;
   }, [
     tabMetaList, activeTabId, activeTab, sidebarOpen, theme, histogramOpen, filterMode, activeUi,
-    presets, groups, openPicker, activateTab, closeTab, toggleSidebar, toggleTheme, toggleHistogram,
-    toggleFilterMode, handleFetch, clearActiveTab, updateActiveTabUi, stepFontSize, handleFilesOpen,
+    presets, savedQueries, groups, openPicker, activateTab, closeTab, toggleSidebar, toggleTheme, toggleHistogram,
+    toggleFilterMode, handleFetch, clearActiveTab, updateActiveTabUi, stepFontSize, handleFilesOpen, launchPreset,
   ]);
 
   // Auto-refresh for remote query tabs — re-triggers "Fetch new" on an
@@ -559,6 +590,13 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
           recentFiles={recentFiles}
           onRemoveRecent={removeRecent}
           initialMode={pickerMode}
+          saved={savedQueries}
+          recent={recentQueries}
+          saveQuery={saveQueryPreset}
+          removeSaved={removeSavedQuery}
+          pushRecent={pushRecentQuery}
+          removeRecent={removeRecentQuery}
+          onLaunchPreset={launchPreset}
         />
       )}
       {modal === 'preferences' && (
@@ -571,6 +609,13 @@ export function LogViewerApp({ active, onSendToJsonLens }) {
           onCreate={createRemoteTab}
           onSave={updateRemoteTab}
           onClose={closeModal}
+          saved={savedQueries}
+          recent={recentQueries}
+          saveQuery={saveQueryPreset}
+          removeSaved={removeSavedQuery}
+          pushRecent={pushRecentQuery}
+          removeRecent={removeRecentQuery}
+          onLaunchPreset={launchPreset}
         />
       )}
       <CommandBar open={commandBarOpen} onClose={() => setCommandBarOpen(false)} commands={commands} />

@@ -5,7 +5,10 @@ import { RemoteQueryBody } from './RemoteQueryBody.jsx';
 // seeded from an existing tab) and "Edit" (mode: 'edit', reconfigures that
 // same tab) from the tab bar's context menu, where the source is already
 // known to be a remote query.
-export function RemoteQueryEditModal({ mode, initialConfig, onCreate, onSave, onClose }) {
+export function RemoteQueryEditModal({
+  mode, initialConfig, onCreate, onSave, onClose,
+  saved, recent, saveQuery, removeSaved, pushRecent, removeRecent, onLaunchPreset,
+}) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal remote-query-modal" onClick={(e) => e.stopPropagation()}>
@@ -15,6 +18,13 @@ export function RemoteQueryEditModal({ mode, initialConfig, onCreate, onSave, on
           onCreate={onCreate}
           onSave={onSave}
           onClose={onClose}
+          saved={saved}
+          recent={recent}
+          saveQuery={saveQuery}
+          removeSaved={removeSaved}
+          pushRecent={pushRecent}
+          removeRecent={removeRecent}
+          onLaunchPreset={onLaunchPreset}
         />
       </div>
     </div>

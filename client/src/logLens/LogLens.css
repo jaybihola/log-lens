@@ -135,6 +135,7 @@
 }
 .pinned-row:hover .pinned-row-unpin, .pinned-row.menu-target .pinned-row-unpin { opacity: 1; }
 .pinned-row-unpin:hover { color: var(--fg); background: var(--panel-sunken); }
+.pinned-row-launch:hover { color: var(--accent); background: rgba(var(--accent-rgb), 0.14); }
 
 .field-stats-popover {
   position: fixed; z-index: 90; width: 240px;
